@@ -1,0 +1,276 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'master'
+      - 'maintenance/*'
+    tags:
+      - 'v[0-9].*'
+  schedule:
+    # Every Wednesday at 6:36 UTC
+    - cron: "36 6 * * 3"
+
+jobs:
+  style-c:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install and update dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format git
+    - name: Check C code formatting
+      run: |
+        clang-format -i src/* include/*
+        git diff --exit-code
+
+  style-python:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        pip install tox
+        cd wrappers/python
+    - name: Check Python code formatting
+      run: |
+        tox -vv -e flake8,black
+
+  build-linux:
+    needs:
+      - style-c
+      - style-python
+    runs-on: ubuntu-latest
+    container:
+      # Things like actions/checkout and actions/upload-artifact start to fall
+      # apart if we use an older image.
+      image: quay.io/pypa/manylinux2014_x86_64
+      env:
+        CC: gcc
+        CXX: g++
+    steps:
+    - uses: actions/checkout@v3
+    - name: Get history and tags for SCM versioning to work
+      run: |
+        git config --global --add safe.directory '*'
+        git fetch --prune --unshallow
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+    - name: Describe version
+      run: |
+        git describe --tags --first-parent HEAD
+    - name: Build C Library
+      # GLIBC 2.31 broke compatibility in that a.o. __exp_finite is no
+      # longer defined, i.e. building with -ffast-math on the manylinux2014
+      # image means it won't run on modern platforms. We therefore disable
+      # this for Linux wheels.
+      # See e.g. https://stackoverflow.com/questions/63261220/link-errors-with-ffast-math-ffinite-math-only-and-glibc-2-31
+      run: |
+        mkdir build
+        cd build
+        cmake -DUSE_FAST_MATH=OFF -DUSE_FAST_TANH=ON -DCMAKE_INSTALL_PREFIX=../dist -DCMAKE_BUILD_TYPE=Release ..
+        make -j4 install
+    - name: Build Python Wheel
+      run: |
+        cd wrappers/python
+        /opt/python/cp37-cp37m/bin/python setup.py build_ext --library-dirs=../../dist/lib --include-dirs=../../include bdist_wheel --py-limited-api=cp37
+        auditwheel repair dist/*
+    # Upload the artifacts
+    - uses: actions/upload-artifact@v3
+      with:
+        name: c-build-linux
+        path: dist/
+        retention-days: 5
+    - uses: actions/upload-artifact@v3
+      with:
+        name: python-build-linux
+        path: wrappers/python/wheelhouse/
+        retention-days: 5
+    - uses: actions/upload-artifact@v3
+      with:
+        name: fortran-interface
+        path: wrappers/fortran/zsf.f90
+        retention-days: 5
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: powershell
+    needs:
+      - style-c
+      - style-python
+    steps:
+    - uses: actions/checkout@v3
+    - name: Get history and tags for SCM versioning to work
+      run: |
+        git fetch --prune --unshallow
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+    - name: Describe version
+      run: git describe --tags --first-parent HEAD
+    - name: Install 32-bit Python
+      uses: actions/setup-python@v4
+      id: python_x86
+      with:
+        python-version: "3.7"
+        architecture: x86
+    - name: Install 64-bit Python
+      uses: actions/setup-python@v4
+      id: python_x64
+      with:
+        python-version: "3.7"
+        architecture: x64
+    - name: Build C library (32-bit and 64-bit)
+      run: |
+        cmake -G "Visual Studio 17 2022" -A Win32 -S . -B "build32" -DUSE_FAST_MATH=ON -DUSE_FAST_TANH=ON -DCMAKE_INSTALL_PREFIX:FILEPATH=../dist32
+        cmake --build build32 --config Release --target Install
+        cmake -G "Visual Studio 17 2022" -A x64 -S . -B "build64" -DUSE_FAST_MATH=ON -DUSE_FAST_TANH=ON -DCMAKE_INSTALL_PREFIX:FILEPATH=../dist64
+        cmake --build build64 --config Release --target Install
+    - name: Install Python dependencies
+      run: |
+        & "${{ steps.python_x86.outputs.python-path }}" -m pip install wheel>=0.35.0
+        & "${{ steps.python_x64.outputs.python-path }}" -m pip install wheel>=0.35.0
+    - name: Build Python Wheels
+      run: |
+        cd wrappers/python
+        & "${{ steps.python_x86.outputs.python-path }}" setup.py build_ext --library-dirs=../../dist32/lib --include-dirs=../../include bdist_wheel --py-limited-api=cp37
+        & "${{ steps.python_x64.outputs.python-path }}" setup.py build_ext --library-dirs=../../dist64/lib --include-dirs=../../include bdist_wheel --py-limited-api=cp37
+    # Upload the artifacts
+    - uses: actions/upload-artifact@v3
+      with:
+        name: c-build-windows-x86
+        path: dist32/
+        retention-days: 5
+    - uses: actions/upload-artifact@v3
+      with:
+        name: c-build-windows-x64
+        path: dist64/
+        retention-days: 5
+    - uses: actions/upload-artifact@v3
+      with:
+        name: python-build-windows-x86
+        path: wrappers/python/dist/*win32.whl
+        retention-days: 5
+    - uses: actions/upload-artifact@v3
+      with:
+        name: python-build-windows-x64
+        path: wrappers/python/dist/*amd64.whl
+        retention-days: 5
+
+  package-excel:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    - name: Package Excel
+      run: |
+        mkdir excel-build
+        cp artifacts/c-build-windows-x64/bin/zsf.dll excel-build
+        cp artifacts/c-build-windows-x86/bin/zsf-stdcall.dll excel-build
+        cp wrappers/excel/zsf.xlsm excel-build
+    - uses: actions/upload-artifact@v3
+      with:
+        name: excel-build
+        path: excel-build
+        retention-days: 5
+
+  test-python:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.10', '3.11']
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: python-build-linux
+        path: wrappers/python/wheelhouse/
+    - name: Install Tox
+      run: pip install tox
+    - name: Run tests
+      run: |
+        cd wrappers/python
+        tox -vv --installpkg wheelhouse/*.whl
+      env:
+        TOXENV: py
+
+  test-fortran:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        name: c-build-linux
+        path: dist/
+    - name: Install gfortran
+      run: |
+        sudo apt-get update
+        sudo apt-get install gfortran
+    - name: Run tests
+      run: |
+        cd wrappers/fortran
+        gfortran -fdefault-real-8 -o test zsf.f90 test.f90 ../../dist/lib/libzsf-static.a
+        ./test
+
+  deploy-pypi:
+    needs:
+      - test-fortran
+      - test-python
+      - package-excel
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    - uses: actions/setup-python@v4
+    - run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+    - env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        twine upload artifacts/python-build-*/*
+
+  deploy-github-release:
+    needs:
+      - test-fortran
+      - test-python
+      - package-excel
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    - run: |
+        cd artifacts/excel-build && zip ../../zsf-excel-${{ github.ref_name }}.zip *
+    - run: |
+        cd artifacts/c-build-linux && tar zcf ../../libzsf-${{ github.ref_name }}-linux-amd64.tar.gz *
+    - run: |
+        cd artifacts/c-build-windows-x64 && zip -r ../../libzsf-${{ github.ref_name }}-windows-amd64.zip *
+    - run: |
+        cd artifacts/c-build-windows-x86 && zip -r ../../libzsf-${{ github.ref_name }}-windows-386.zip *
+    - run: |
+        cd artifacts/fortran-interface && zip -r ../../libzsf-fortran-interface-${{ github.ref_name }}.zip *
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "*.zip,*.tar.gz,artifacts/python-build-*/*.whl"
+        generateReleaseNotes: true
+        draft: true
