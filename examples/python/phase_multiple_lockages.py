@@ -12,40 +12,42 @@ lock_parameters = {
 }
 
 constant_boundary_conditions = {
-    'head_lake': 0.0,
-    'temperature_lake': 15.0,
-    'temperature_sea': 15.0,
+    "head_lake": 0.0,
+    "temperature_lake": 15.0,
+    "temperature_sea": 15.0,
 }
 
 mitigation_parameters = {
-    'density_current_factor_lake': 0.25,
-    'density_current_factor_sea': 0.25,
-    'distance_door_bubble_screen_lake': 10.0,
-    'distance_door_bubble_screen_sea': 10.0,
-    'flushing_discharge_high_tide': 0.0,
-    'flushing_discharge_low_tide': 0.0,
-    'sill_height_lake': 0.5,
+    "density_current_factor_lake": 0.25,
+    "density_current_factor_sea": 0.25,
+    "distance_door_bubble_screen_lake": 10.0,
+    "distance_door_bubble_screen_sea": 10.0,
+    "flushing_discharge_high_tide": 0.0,
+    "flushing_discharge_low_tide": 0.0,
+    "sill_height_lake": 0.5,
 }
 
 # Initialize the lock
-z = pyzsf.ZSFUnsteady(15.0, 0.0, **lock_parameters, **constant_boundary_conditions, **mitigation_parameters)
+z = pyzsf.ZSFUnsteady(
+    15.0, 0.0, **lock_parameters, **constant_boundary_conditions, **mitigation_parameters
+)
 
 # Read the lockages from a file
-df_lockages = pd.read_csv('lockages.csv', index_col=0)
-lockages = list(df_lockages.to_dict('records'))
+df_lockages = pd.read_csv("lockages.csv", index_col=0)
+lockages = list(df_lockages.to_dict("records"))
 
 # Go through all lockages
 all_results = []
 
 for parameters in lockages:
-    routine = int(parameters.pop('routine'))
-    t_open_lake = parameters.pop('t_open_lake')
-    t_open_sea = parameters.pop('t_open_sea')
-    t_level = parameters.pop('t_level')
-    t_flushing = parameters.pop('t_flushing')
+    routine = int(parameters.pop("routine"))
+    t_open_lake = parameters.pop("t_open_lake")
+    t_open_sea = parameters.pop("t_open_sea")
+    t_level = parameters.pop("t_level")
+    t_flushing = parameters.pop("t_flushing")
 
-    parameters['ship_volume_sea_to_lake'] = 0.0
-    parameters['ship_volume_lake_to_sea'] = 0.0
+    parameters["ship_volume_sea_to_lake"] = 0.0
+    parameters["ship_volume_lake_to_sea"] = 0.0
 
     if routine == 1:
         assert t_level > 0
@@ -76,11 +78,11 @@ for results in all_results:
         if k.startswith(("volume_", "mass_")):
             overall_results[k] = overall_results.get(k, 0.0) + v
 
-    overall_mass_to_sea += results['volume_to_sea'] * results['salinity_to_sea']
-    overall_mass_to_lake += results['volume_to_lake'] * results['salinity_to_lake']
+    overall_mass_to_sea += results["volume_to_sea"] * results["salinity_to_sea"]
+    overall_mass_to_lake += results["volume_to_lake"] * results["salinity_to_lake"]
 
-overall_results['salinity_to_sea'] = overall_mass_to_sea / overall_results['volume_to_sea']
-overall_results['salinity_to_lake'] = overall_mass_to_lake / overall_results['volume_to_lake']
+overall_results["salinity_to_sea"] = overall_mass_to_sea / overall_results["volume_to_sea"]
+overall_results["salinity_to_lake"] = overall_mass_to_lake / overall_results["volume_to_lake"]
 
 overall_discharges = {}
 for k, v in overall_results.items():
