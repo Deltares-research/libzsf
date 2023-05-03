@@ -43,12 +43,14 @@ ffibuilder.cdef(
         double discharge_from_lake;
         double discharge_to_lake;
         double salinity_to_lake;
+        double volume_ship_to_lake;
 
         double mass_transport_sea;
         double salt_load_sea;
         double discharge_from_sea;
         double discharge_to_sea;
         double salinity_to_sea;
+        double volume_ship_to_sea;
     } zsf_results_t;
 
     typedef struct zsf_phase_state_t {
@@ -65,6 +67,7 @@ ffibuilder.cdef(
         double discharge_from_lake;
         double discharge_to_lake;
         double salinity_to_lake;
+        double volume_ship_to_lake;
 
         double mass_transport_sea;
         double volume_from_sea;
@@ -72,6 +75,7 @@ ffibuilder.cdef(
         double discharge_from_sea;
         double discharge_to_sea;
         double salinity_to_sea;
+        double volume_ship_to_sea;
     } zsf_phase_transports_t;
 
     typedef struct zsf_aux_results_t {

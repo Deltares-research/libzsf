@@ -251,6 +251,31 @@ class TestSaltLoadSteady(unittest.TestCase):
 
         self.assert_allclose_loose(results_ship_both["salt_load_lake"], -22.373)
 
+    def test_ship_volume_to_sea_lake_transports(self):
+        results = zsf_calc_steady(
+            **dict(
+                self.parameters,
+                ship_volume_sea_to_lake=1000.0,
+                ship_volume_lake_to_sea=700.0,
+                auxiliary_results=True,
+            )
+        )
+
+        self.assertEqual(results["volume_ship_to_lake"], 300.0)
+        self.assertEqual(results["volume_ship_to_sea"], -300.0)
+
+        self.assertEqual(results["transports_phase_1"]["volume_ship_to_lake"], 0.0)
+        self.assertEqual(results["transports_phase_1"]["volume_ship_to_sea"], 0.0)
+
+        self.assertEqual(results["transports_phase_2"]["volume_ship_to_lake"], 300.0)
+        self.assertEqual(results["transports_phase_2"]["volume_ship_to_sea"], 0.0)
+
+        self.assertEqual(results["transports_phase_3"]["volume_ship_to_lake"], 0.0)
+        self.assertEqual(results["transports_phase_3"]["volume_ship_to_sea"], 0.0)
+
+        self.assertEqual(results["transports_phase_4"]["volume_ship_to_lake"], 0.0)
+        self.assertEqual(results["transports_phase_4"]["volume_ship_to_sea"], -300.0)
+
     def test_bubble_screen(self):
         sl_bubble_50 = zsf_calc_steady(
             **dict(

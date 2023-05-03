@@ -160,6 +160,10 @@ Note that :c:struct:`zsf_aux_results_t` is an optional output of this function, 
 
       The average salinity of the water going from the lock to the lake in :math:`kg/m^3`.
 
+   .. c:var:: double volume_ship_to_lake
+
+      The net water displacement of ships from the lock to the lake in :math:`m^3`.
+
    .. c:var:: double mass_transport_sea
 
       The mass transport of salt over the sea head in :math:`kg/m^3`.
@@ -179,6 +183,10 @@ Note that :c:struct:`zsf_aux_results_t` is an optional output of this function, 
    .. c:var:: double salinity_to_sea
 
       The average salinity of the water going from the lock to the sea in :math:`kg/m^3`.
+
+   .. c:var:: double volume_ship_to_sea
+
+      The net water displacement of ships from the lock to the sea in :math:`m^3`.
 
 
 .. c:struct:: zsf_aux_results_t
@@ -344,6 +352,10 @@ Phase-wise output
 
       The average salinity of the water going from the lock to the lake in :math:`kg/m^3`.
 
+   .. c:var:: double volume_ship_to_lake
+
+      The net water displacement of ships from the lock to the lake in :math:`m^3`.
+
    .. c:var:: double mass_transport_sea
 
       The mass transport of salt over the sea head in :math:`kg`.
@@ -367,6 +379,10 @@ Phase-wise output
    .. c:var:: double salinity_to_sea
 
       The average salinity of the water going from the lock to the sea in :math:`kg/m^3`.
+
+   .. c:var:: double volume_ship_to_sea
+
+      The net water displacement of ships from the lock to the sea in :math:`m^3`.
 
 
 Functions
