@@ -54,12 +54,18 @@ if(USE_FAST_TANH)
     add_definitions(-DZSF_USE_FAST_TANH)
 endif()
 
+set(ZFS_SOURCE_FILES
+    src/zsf.c
+    src/dimr_bmi.c
+    src/dimr_bmi.h
+)
+
 ##############################################################################
 ################################## Targets ###################################
 ##############################################################################
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-add_library(zsf SHARED src/zsf.c)
+add_library(zsf SHARED ${ZFS_SOURCE_FILES})
 
 set_target_properties (zsf PROPERTIES
     DEFINE_SYMBOL "ZSF_EXPORTS"
@@ -67,7 +73,7 @@ set_target_properties (zsf PROPERTIES
     PUBLIC_HEADER "include/zsf.h"
 )
 
-add_library(zsf-static STATIC src/zsf.c)
+add_library(zsf-static STATIC ${ZFS_SOURCE_FILES})
 
 set_target_properties(zsf-static PROPERTIES
     COMPILE_DEFINITIONS "ZSF_STATIC"
@@ -82,7 +88,7 @@ set(INSTALL_TARGETS zsf zsf-static)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     # 64 bits - do nothing. 64 bits office can just use the regular dll
 elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-    add_library(zsf-stdcall SHARED src/zsf.c)
+    add_library(zsf-stdcall SHARED ${ZFS_SOURCE_FILES})
 
     set_target_properties (zsf-stdcall PROPERTIES
         DEFINE_SYMBOL "ZSF_EXPORTS"
