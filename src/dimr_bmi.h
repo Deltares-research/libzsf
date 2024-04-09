@@ -33,7 +33,7 @@ int get_var_shape(char *key, int *dims);      // dims -> int[6]
 /* Not needed? (also mostly not BMI standard) */
 int  update_until(double update_time);
 
-void get_version_string(char *version_string);
+ZSF_EXPORT void ZSF_CALLCONV get_version_string(char **version_string);
 void get_attribute(char *name, char *value);
 ZSF_EXPORT void ZSF_CALLCONV get_start_time(double *start_time_ptr);
 ZSF_EXPORT void ZSF_CALLCONV get_end_time(double *end_time_ptr);
