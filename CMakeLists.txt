@@ -55,9 +55,12 @@ if(USE_FAST_TANH)
 endif()
 
 set(ZFS_SOURCE_FILES
+    include/zsf.h
     src/zsf.c
     src/dimr_bmi.c
     src/dimr_bmi.h
+    src/csv.c
+    src/csv.h
 )
 
 ##############################################################################
