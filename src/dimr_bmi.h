@@ -19,7 +19,7 @@ extern "C" {
 #define DIMR_BMI_OK      (0) // Should be returned on success.
 #define DIMR_BMI_FAILURE (1) // Generic 'failure'.
 
-#define DIMR_BMI_MAXDIMS (6) // For get_var_shape.
+#define DIMR_BMI_MAXDIMS (6) // Used in get_var_shape.
 
 
 ZSF_EXPORT int ZSF_CALLCONV initialize(const char *config_file);

@@ -73,6 +73,24 @@ int load_csv(csv_context_t *context, char *filepath);
 int unload_csv(csv_context_t *context);
 size_t get_csv_num_rows(csv_context_t *context);
 int get_csv_row_data(csv_context_t *context, size_t row_index, void *struct_ptr);
+int get_csv_column_data(csv_context_t *context, char *label, void *array_ptr, size_t array_len);
+
+
+#  define CSV_SETTER(S, A, VA)                                                                     \
+    int set_##A##(void *ptr, csv_value_t value) {                                                  \
+      S *dataptr = (S *)ptr;                                                                       \
+      dataptr->A = value.data.VA;                                                                  \
+      return CSV_OK;                                                                               \
+    }
+
+int set_dummy(void *ptr, csv_value_t value);
+
+#  define CSV_INT_SETTER(S, A) CSV_SETTER(S, A, int_value)
+#  define CSV_UINT_SETTER(S, A) CSV_SETTER(S, A, uint_value)
+#  define CSV_LONG_SETTER(S, A) CSV_SETTER(S, A, long_value)
+#  define CSV_FLOAT_SETTER(S, A) CSV_SETTER(S, A, float_value)
+#  define CSV_DOUBLE_SETTER(S, A) CSV_SETTER(S, A, double_value)
+#  define CSV_STRING_SETTER(S, A) CSV_SETTER(S, A, string_value)
 
 #  ifdef __cplusplus
 }

@@ -259,6 +259,10 @@ int _parse_line(csv_context_t *context, char *line)
 // Public functions.
 
 
+// Dummy setter function.
+int set_dummy(void* ptr, csv_value_t value) { return CSV_OK; }
+
+
 // Define csv column header, value type and setter function in the supplied context.
 // NOTE: This function must be called for each header and before calling load_csv()!
 // Returns CSV_OK on success. CSV_ERROR if the maximum number of columns defined in CSV_MAX_COLUMNS was exceeded.
@@ -365,4 +369,73 @@ int get_csv_row_data(csv_context_t *context, size_t row_index, void *struct_ptr)
     }
 
     return status;
+}
+
+
+// Copy values of a given column and type to an array.
+int _get_array(csv_context_t* context, csv_type_t type, size_t column_index, void* array_ptr, size_t array_len)
+{
+  if (array_len > context->num_rows)
+  {
+    array_len = context->num_rows;
+  }
+
+  for (int row = 0; row < array_len; row++)
+  {
+    csv_value_t value = context->rows[row][column_index];
+    switch (value.type)
+    {
+    case int_type:
+      ((int *)array_ptr)[row] = value.data.int_value;
+      break;
+    case uint_type:
+      ((unsigned int *)array_ptr)[row] = value.data.uint_value;
+      break;
+    case long_type:
+      ((long *)array_ptr)[row] = value.data.long_value;
+      break;
+    case float_type:
+      ((float *)array_ptr)[row] = value.data.float_value;
+      break;
+    case double_type:
+      ((double *)array_ptr)[row] = value.data.double_value;
+      break;
+    case string_type:
+      ((char **)array_ptr)[row] = value.data.string_value;
+      break;
+    case error_type:
+    case none_type:
+    default:
+      return CSV_ERROR;
+    }
+  }
+
+  return CSV_OK;
+}
+
+
+// Collect data from a column into an array of the appropriate type.
+// array_ptr is a pre-allocated array, array_len is the size of the array in number of elements.
+// Addressing undefined columns will result in a failure and nothing will be written to the array.
+int get_csv_column_data(csv_context_t *context, char *label, void *array_ptr,
+                        size_t array_len)
+{
+  size_t column_index = 0;
+  int column_def_index = _CSV_NO_DEF_INDEX;
+
+  assert(context);
+  assert(array_ptr);
+  assert(label);
+
+  for (column_index = 0; column_index < context->num_columns; column_index++)
+  {
+    column_def_index = context->column_def_index[column_index];
+    if (column_def_index != _CSV_NO_DEF_INDEX && !strcmp(context->column_defs[column_def_index].label, label))
+    {
+      return _get_array(context, context->column_defs[column_def_index].value_type, column_index,
+                        array_ptr, array_len);
+    }
+  }
+
+  return CSV_ERROR;
 }
