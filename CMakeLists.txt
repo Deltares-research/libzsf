@@ -61,6 +61,10 @@ set(ZFS_SOURCE_FILES
     src/dimr_bmi.h
     src/csv.c
     src/csv.h
+    src/load_time_averaged.h
+    src/load_time_averaged.c
+    src/sealock.h
+    src/sealock.c
 )
 
 ##############################################################################

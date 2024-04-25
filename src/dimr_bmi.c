@@ -5,27 +5,17 @@
 #include <string.h>
 #include <assert.h>
 
+#include "sealock.h"
+
 #define ZSF_VERBOSE 1
 #define ZSF_MAX_LOCKS 50
 #define ZSF_KEY_SEPARATOR '/'
 
 #define ZSF_TO_DIMR_STATUS(s) ((s) == 0 ? DIMR_BMI_OK : DIMR_BMI_FAILURE)
 
-typedef unsigned int zsf_lock_index;
-
-typedef enum zsf_operation_mode_e { time_averaged_mode = 0, phase_wise_mode } zsf_operation_mode_t;
-
-typedef struct zsf_lock_state_struct {
-  
-  zsf_param_t          parameters;
-  zsf_phase_state_t    phase_state;
-  zsf_results_t        results;
-  zsf_aux_results_t    aux_results;
-  zsf_operation_mode_t operation_mode;
-} zsf_lock_state;
 
 // Keep track of multiple sea-lock instances.
-zsf_lock_state locks[ZSF_MAX_LOCKS];
+sealock_state_t locks[ZSF_MAX_LOCKS];
 double start_time = 0;
 double current_time = 0;
 double end_time = 0;
@@ -33,21 +23,48 @@ double end_time = 0;
 // Exported
 int initialize(const char *config_file)
 {
+  // TODO: Read these items from .ini file.
+  // (MOCKUP) Start ini config items.
+  zsf_computation_mode_t computation_mode = cycle_average_mode;
+  char *sealock_operational_parameters = "sealock_A.csv";
+  double initial_head_lock = 0.0;
+  double initial_salinity_lock = 15.0;
+  double initial_saltmass_lock = 12344.0;
+  double initial_temperature_lock = 10.1; // Where do we map this?
+  double initial_volume_ship_in_lock = 0.0;
+  double lock_length = 300.0;
+  double lock_width = 25.0;
+  double lock_bottom = -7.0;
+  // (MOCKUP) End ini config items.
+
   int status = 0;
-  zsf_lock_index lock_index = 0;
-  double sal_lock = 0.0, head_lock = 0.0;
-
-
-  zsf_param_default(&locks[lock_index].parameters);
-  // TODO: Implement reading supplied config file(s).
-
-  locks[lock_index].operation_mode = time_averaged_mode;
+  sealock_index_t lock_index = 0; // Fixed for now.
+  size_t num_rows = 0;
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\" ) called.\n", __func__, config_file);
 #endif
 
-  status |= zsf_initialize_state(&locks[lock_index].parameters, &locks[lock_index].phase_state, sal_lock, head_lock);
+  // init calculation parameters with defaults.
+  zsf_param_default(&locks[lock_index].parameters);
+
+  // Set up user provided initial lock parameters.
+  locks[lock_index].computation_mode = cycle_average_mode;
+  locks[lock_index].parameters.lock_length = lock_length;
+  locks[lock_index].parameters.lock_width = lock_width;
+  locks[lock_index].parameters.lock_bottom = lock_bottom;
+  locks[lock_index].phase_state.saltmass_lock = initial_saltmass_lock;
+  locks[lock_index].phase_state.volume_ship_in_lock = initial_volume_ship_in_lock;
+  locks[lock_index].phase_state.salinity_lock = initial_salinity_lock;
+  locks[lock_index].phase_state.head_lock = initial_head_lock;
+  // TODO: Map temperature somewhere?
+
+  status = sealock_load_data(&locks[lock_index], sealock_operational_parameters);
+  status = sealock_update(&locks[lock_index], current_time);
+
+  // Initialize parameters consistent with current and given settings.
+  status |= zsf_initialize_state(&locks[lock_index].parameters, &locks[lock_index].phase_state,
+                                 initial_salinity_lock, initial_head_lock);
 
   return ZSF_TO_DIMR_STATUS(status);
 }
@@ -73,7 +90,15 @@ inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **q
     return 0;
   }
 
-  // TODO: implement properly?
+  // We assume a bmi request key to be of one of the following forms:
+  // 1. "Quantity"
+  // 2. "LockID/Quantity"
+  // 3. "VarType/LockID/Quantity"
+  // 4. "**/VarType/LockId/Quantity" This ignores all parts before.
+  // There is no checking done with regards to any configured settings, so
+  // we don't make any attempt to recognize what each part is.
+  *vartype_ptr = NULL;
+  *lock_id_ptr = NULL;
   *quantity_ptr = ptr;
   while (*ptr) {
     if (*ptr == ZSF_KEY_SEPARATOR) {
@@ -86,6 +111,7 @@ inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **q
   return 1;
 }
 
+// Checks if a previously retrieved (sub) key matches a defined key.
 inline int match_key(char *key, char *defined_key) {
   size_t defined_key_length = strlen(defined_key);
   return !strncmp(key, defined_key, defined_key_length) &&
@@ -95,7 +121,7 @@ inline int match_key(char *key, char *defined_key) {
 // Exported
 // In BMI 2.0 = set_value
 int set_var(const char *key, void *src_ptr) {
-  zsf_lock_index lock_index = 0;
+  sealock_index_t lock_index = 0;
   double *dest_ptr = NULL;
   char *quantity = NULL;
   char *vartype = NULL;
@@ -110,7 +136,7 @@ int set_var(const char *key, void *src_ptr) {
     return DIMR_BMI_FAILURE;
   }
 
-  // lock_index = get_lock_index(lock_id);
+  // lock_index = get_lock_index(lock_id); // The lock_id is currently ignored and kept at 0.
   if (lock_index < 0) {
     return DIMR_BMI_FAILURE;
   }
@@ -149,7 +175,7 @@ int get_var(const char *key, void **dst_ptr)
   printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
 #endif
 
-  zsf_lock_index lock_index = 0;
+  sealock_index_t lock_index = 0;
   double *source_ptr = NULL;
   char *quantity = NULL;
   char *vartype = NULL;
@@ -213,27 +239,15 @@ int get_value_ptr(char *key, void **dst_ptr)
 int update(double dt)
 { 
   int status = 0;
-  zsf_lock_index lock_index = 0;
+  sealock_index_t lock_index = 0;
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
 #endif
-
   current_time += dt;
 
-  switch (locks[lock_index].operation_mode)
-  {
-    case time_averaged_mode:
-      // TODO: Update parameters from CSV data?
-      status = zsf_calc_steady(&locks[lock_index].parameters, &locks[lock_index].results, NULL);
-      break;
-    case phase_wise_mode:
-      // TODO: implement me
-      break;
-    default:
-      status = -1; // Should never happen.
-      break;
-  }
+  // TODO: Add loop over locks.
+  status = sealock_update(&locks[lock_index], current_time);
 
   return ZSF_TO_DIMR_STATUS(status);
 }
@@ -278,9 +292,9 @@ void get_start_time(double *start_time_ptr)
 void get_end_time(double *end_time_ptr)
 {
 #if ZSF_VERBOSE
-    printf("ZSF: %s( %g ) called.\n", __func__, *end_time_ptr);
+  printf("ZSF: %s( %g ) called.\n", __func__, *end_time_ptr);
 #endif
-    // TODO: Implement me
+  // TODO: Implement me
 }
 
 // Exported
@@ -298,7 +312,7 @@ void get_current_time(double *current_time_ptr)
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *current_time_ptr);
 #endif
-  // TODO: Implement me
+  *current_time_ptr = current_time;
 }
 
 
