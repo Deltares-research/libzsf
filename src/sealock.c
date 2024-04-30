@@ -1,4 +1,6 @@
 
+#include <stdlib.h>
+
 #include "sealock.h"
 #include "load_time_averaged.h"
 
@@ -14,7 +16,7 @@ int sealock_load_data(sealock_state_t* lock, char* filepath)
     {
       return -1;
     }
-    lock->times = (double *)malloc(lock->times_len * sizeof(double));
+    lock->times = malloc(lock->times_len * sizeof(double));
     if (lock->times != NULL) {
       return get_csv_column_data(&lock->timeseries_data, "time", lock->times, lock->times_len);    
     } else {
