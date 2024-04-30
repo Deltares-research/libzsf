@@ -375,33 +375,34 @@ int get_csv_row_data(csv_context_t *context, size_t row_index, void *struct_ptr)
 // Copy values of a given column and type to an array.
 int _get_array(csv_context_t* context, csv_type_t type, size_t column_index, void* array_ptr, size_t array_len)
 {
+  int row_index = 0;
   if (array_len > context->num_rows)
   {
     array_len = context->num_rows;
   }
 
-  for (int row = 0; row < array_len; row++)
+  for (row_index = 0; row_index < array_len; row_index++)
   {
-    csv_value_t value = context->rows[row][column_index];
+    csv_value_t value = context->rows[row_index][column_index];
     switch (value.type)
     {
     case int_type:
-      ((int *)array_ptr)[row] = value.data.int_value;
+      ((int *)array_ptr)[row_index] = value.data.int_value;
       break;
     case uint_type:
-      ((unsigned int *)array_ptr)[row] = value.data.uint_value;
+      ((unsigned int *)array_ptr)[row_index] = value.data.uint_value;
       break;
     case long_type:
-      ((long *)array_ptr)[row] = value.data.long_value;
+      ((long *)array_ptr)[row_index] = value.data.long_value;
       break;
     case float_type:
-      ((float *)array_ptr)[row] = value.data.float_value;
+      ((float *)array_ptr)[row_index] = value.data.float_value;
       break;
     case double_type:
-      ((double *)array_ptr)[row] = value.data.double_value;
+      ((double *)array_ptr)[row_index] = value.data.double_value;
       break;
     case string_type:
-      ((char **)array_ptr)[row] = value.data.string_value;
+      ((char **)array_ptr)[row_index] = value.data.string_value;
       break;
     case error_type:
     case none_type:
