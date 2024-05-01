@@ -21,8 +21,7 @@ double current_time = 0;
 double end_time = 0;
 
 // Exported
-int initialize(const char *config_file)
-{
+int initialize(const char *config_file) {
   // TODO: Read these items from .ini file.
   // (MOCKUP) Start ini config items.
   zsf_computation_mode_t computation_mode = cycle_average_mode;
@@ -70,8 +69,7 @@ int initialize(const char *config_file)
 }
 
 // Exported
-int finalize()
-{
+int finalize() {
 #if ZSF_VERBOSE
   printf("ZSF: %s() called.\n", __func__);
 #endif
@@ -169,8 +167,7 @@ int set_var(const char *key, void *src_ptr) {
 
 // Exported
 // In BMI 2.0 = get_value
-int get_var(const char *key, void **dst_ptr)
-{
+int get_var(const char *key, void **dst_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
 #endif
@@ -226,8 +223,7 @@ int get_var(const char *key, void **dst_ptr)
 }
 
 // In DIMR **dst_ptr always is a double.
-int get_value_ptr(char *key, void **dst_ptr) 
-{
+int get_value_ptr(char *key, void **dst_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
 #endif
@@ -236,8 +232,7 @@ int get_value_ptr(char *key, void **dst_ptr)
 }
 
 // Exported
-int update(double dt)
-{ 
+int update(double dt) { 
   int status = 0;
   sealock_index_t lock_index = 0;
 
@@ -252,8 +247,7 @@ int update(double dt)
   return ZSF_TO_DIMR_STATUS(status);
 }
 
-int get_var_shape(char *key, int *dims) // dims -> int[6]
-{
+int get_var_shape(char *key, int *dims) { // dims -> int[6]
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\", %d ) called.\n", __func__, key, *dims);
 #endif
@@ -262,8 +256,7 @@ int get_var_shape(char *key, int *dims) // dims -> int[6]
 }
 
 /* Not needed? (also mostly not BMI standard) */
-int  update_until(double update_time)
-{
+int  update_until(double update_time) {
   return DIMR_BMI_OK;
 }
 
@@ -274,14 +267,12 @@ void get_version_string(char **version_string)
   }
 }
 
-void get_attribute(char *name, char *value)
-{
+void get_attribute(char *name, char *value) {
   // TODO: Implement me?
 }
 
 // Exported
-void get_start_time(double *start_time_ptr)
-{
+void get_start_time(double *start_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *start_time_ptr);
 #endif
@@ -289,8 +280,7 @@ void get_start_time(double *start_time_ptr)
 }
 
 // Exported
-void get_end_time(double *end_time_ptr)
-{
+void get_end_time(double *end_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *end_time_ptr);
 #endif
@@ -298,8 +288,7 @@ void get_end_time(double *end_time_ptr)
 }
 
 // Exported
-void get_time_step(double *time_step_ptr)
-{
+void get_time_step(double *time_step_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *time_step_ptr);
 #endif
@@ -307,23 +296,19 @@ void get_time_step(double *time_step_ptr)
 }
 
 // Exported
-void get_current_time(double *current_time_ptr)
-{
+void get_current_time(double *current_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *current_time_ptr);
 #endif
   *current_time_ptr = current_time;
 }
 
-
 // Points to a Log object (see log.h in DIMR)
-void set_dimr_logger(void *logptr)
-{
+void set_dimr_logger(void *logptr) {
   // TODO: Implement me?
 }
 
 // Takes a function pointer (not sure what it is)
-void set_logger_c_callback(void (*callback)(char *msg))
-{
+void set_logger_c_callback(void (*callback)(char *msg)) {
   // TODO: Implement me?
 }
