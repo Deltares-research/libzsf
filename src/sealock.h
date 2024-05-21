@@ -6,6 +6,9 @@
 #include "zsf.h"
 #include "csv.h"
 
+#define SEALOCK_OK (0)
+#define SEALOCK_ERROR (-1)
+
 #  if defined(__cplusplus)
 extern "C" {
 #  endif
