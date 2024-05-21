@@ -27,7 +27,7 @@ int sealock_load_data(sealock_state_t* lock, char* filepath) {
 int _sealock_update_cycle_average(sealock_state_t* lock, double time) {
   size_t row = lock->current_row;
   while (time > lock->times[row] && row < lock->times_len) { row++; }
-  lock->current_row = row - 1;
+  lock->current_row = row ? row - 1 : 0;
   get_csv_row_data(&lock->timeseries_data, lock->current_row, &lock->parameters);
   return zsf_calc_steady(&lock->parameters, &lock->results, NULL);
 }
