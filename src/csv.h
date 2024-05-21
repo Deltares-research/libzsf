@@ -7,8 +7,8 @@
 
 #include <stddef.h>
 
-#define CSV_OK     0
-#define CSV_ERROR -1
+#define CSV_OK     (0)
+#define CSV_ERROR (-1)
 
 #define CSV_SEPARATOR ';'
 #define CSV_MAX_LINE_LENGTH (4096)
