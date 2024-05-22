@@ -35,7 +35,7 @@ int _sealock_update_cycle_average(sealock_state_t* lock, double time) {
 
 
 int _sealock_update_phase_wise(sealock_state_t *lock, double time) {
-  // TODO: implement me
+  // TODO: implement me: See UNST-7866.
   return SEALOCK_OK;
 }
 
