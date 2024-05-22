@@ -65,6 +65,8 @@ set(ZSF_SOURCE_FILES
     src/load_time_averaged.c
     src/sealock.h
     src/sealock.c
+    src/ini.h
+    src/ini.c
 )
 
 ##############################################################################
