@@ -67,6 +67,8 @@ set(ZSF_SOURCE_FILES
     src/sealock.c
     src/ini.h
     src/ini.c
+    src/zsf_config.h
+    src/zsf_config.c
 )
 
 ##############################################################################
