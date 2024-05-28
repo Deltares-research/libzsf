@@ -5,24 +5,24 @@
 #include <string.h>
 #include <assert.h>
 
-#include "sealock.h"
+#include "zsf_config.h"
 
 #define ZSF_VERBOSE 1
-#define ZSF_MAX_LOCKS 50
 #define ZSF_KEY_SEPARATOR '/'
 
 #define ZSF_TO_DIMR_STATUS(s) ((s) == 0 ? DIMR_BMI_OK : DIMR_BMI_FAILURE)
 
 
 // Keep track of multiple sea-lock instances.
-sealock_state_t locks[ZSF_MAX_LOCKS];
-double start_time = 0;
-double current_time = 0;
-double end_time = 0;
+zsf_config_t config;
 
 // Exported
 int initialize(const char *config_file) {
+  int status = 0;
+  sealock_index_t lock_index = 0; // Fixed for now.
+  size_t num_rows = 0;
   // TODO: Read these items from .ini file.
+  // status = zsf_config_load(&config, config_file);
   // (MOCKUP) Start ini config items.
   zsf_computation_mode_t computation_mode = cycle_average_mode;
   char *sealock_operational_parameters = "sealock_A.csv";
@@ -34,36 +34,34 @@ int initialize(const char *config_file) {
   double lock_length = 300.0;
   double lock_width = 25.0;
   double lock_bottom = -7.0;
+
+  // init calculation parameters with defaults.
+  zsf_param_default(&config.locks[lock_index].parameters);
+
+  // Set up (overwrite) user provided initial lock parameters.
+  config.locks[lock_index].computation_mode = cycle_average_mode;
+  config.locks[lock_index].parameters.lock_length = lock_length;
+  config.locks[lock_index].parameters.lock_width = lock_width;
+  config.locks[lock_index].parameters.lock_bottom = lock_bottom;
+  config.locks[lock_index].phase_state.saltmass_lock = initial_saltmass_lock;
+  config.locks[lock_index].phase_state.volume_ship_in_lock = initial_volume_ship_in_lock;
+  config.locks[lock_index].phase_state.salinity_lock = initial_salinity_lock;
+  config.locks[lock_index].phase_state.head_lock = initial_head_lock;
+  // TODO: Map temperature somewhere?
   // (MOCKUP) End ini config items.
 
-  int status = 0;
-  sealock_index_t lock_index = 0; // Fixed for now.
-  size_t num_rows = 0;
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\" ) called.\n", __func__, config_file);
 #endif
 
-  // init calculation parameters with defaults.
-  zsf_param_default(&locks[lock_index].parameters);
-
-  // Set up user provided initial lock parameters.
-  locks[lock_index].computation_mode = cycle_average_mode;
-  locks[lock_index].parameters.lock_length = lock_length;
-  locks[lock_index].parameters.lock_width = lock_width;
-  locks[lock_index].parameters.lock_bottom = lock_bottom;
-  locks[lock_index].phase_state.saltmass_lock = initial_saltmass_lock;
-  locks[lock_index].phase_state.volume_ship_in_lock = initial_volume_ship_in_lock;
-  locks[lock_index].phase_state.salinity_lock = initial_salinity_lock;
-  locks[lock_index].phase_state.head_lock = initial_head_lock;
-  // TODO: Map temperature somewhere?
-
-  status = sealock_load_data(&locks[lock_index], sealock_operational_parameters);
-  status = sealock_update(&locks[lock_index], current_time);
+  status = sealock_load_data(&config.locks[lock_index], sealock_operational_parameters);
+  status = sealock_update(&config.locks[lock_index], config.current_time);
 
   // Initialize parameters consistent with current and given settings.
-  status |= zsf_initialize_state(&locks[lock_index].parameters, &locks[lock_index].phase_state,
-                                 initial_salinity_lock, initial_head_lock);
+  status |= zsf_initialize_state(&config.locks[lock_index].parameters, &config.locks[lock_index].phase_state,
+                                 config.locks[lock_index].phase_state.salinity_lock,
+                                 config.locks[lock_index].phase_state.head_lock);
 
   return ZSF_TO_DIMR_STATUS(status);
 }
@@ -145,13 +143,13 @@ int set_var(const char *key, void *src_ptr) {
 
   // Set dest_ptr for intended lock and quantity.
   if (match_key(quantity, "salinity_lake")) {
-    dest_ptr = &locks[lock_index].parameters.salinity_lake;
+    dest_ptr = &config.locks[lock_index].parameters.salinity_lake;
   } else if (match_key(quantity, "head_lake")) {
-    dest_ptr = &locks[lock_index].parameters.head_lake;
+    dest_ptr = &config.locks[lock_index].parameters.head_lake;
   } else if (match_key(quantity, "salinity_sea")) {
-    dest_ptr = &locks[lock_index].parameters.salinity_sea;
+    dest_ptr = &config.locks[lock_index].parameters.salinity_sea;
   } else if (match_key(quantity, "head_sea")) {
-    dest_ptr = &locks[lock_index].parameters.head_sea;
+    dest_ptr = &config.locks[lock_index].parameters.head_sea;
   }
 
   if (src_ptr == NULL || dest_ptr == NULL) {
@@ -189,25 +187,25 @@ int get_var(const char *key, void **dst_ptr) {
 
   // Set source based on key(s)...
   if (match_key(quantity, "mass_transport_lake")) {
-    source_ptr = &locks[lock_index].results.mass_transport_lake;
+    source_ptr = &config.locks[lock_index].results.mass_transport_lake;
   } else if (match_key(quantity, "salt_load_lake")) {
-    source_ptr = &locks[lock_index].results.salt_load_lake;
+    source_ptr = &config.locks[lock_index].results.salt_load_lake;
   } else if (match_key(quantity, "discharge_from_lake")) {
-    source_ptr = &locks[lock_index].results.discharge_from_lake;
+    source_ptr = &config.locks[lock_index].results.discharge_from_lake;
   } else if (match_key(quantity, "discharge_to_lake")) {
-    source_ptr = &locks[lock_index].results.discharge_to_lake;
+    source_ptr = &config.locks[lock_index].results.discharge_to_lake;
   } else if (match_key(quantity, "salinity_to_lake")) {
-    source_ptr = &locks[lock_index].results.salinity_to_lake;
+    source_ptr = &config.locks[lock_index].results.salinity_to_lake;
   } else if (match_key(quantity, "mass_transport_sea")) {
-    source_ptr = &locks[lock_index].results.mass_transport_sea;
+    source_ptr = &config.locks[lock_index].results.mass_transport_sea;
   } else if (match_key(quantity, "salt_load_sea")) {
-    source_ptr = &locks[lock_index].results.salt_load_sea;
+    source_ptr = &config.locks[lock_index].results.salt_load_sea;
   } else if (match_key(quantity, "discharge_from_sea")) {
-    source_ptr = &locks[lock_index].results.discharge_from_sea;
+    source_ptr = &config.locks[lock_index].results.discharge_from_sea;
   } else if (match_key(quantity, "discharge_to_sea")) {
-    source_ptr = &locks[lock_index].results.discharge_to_sea;
+    source_ptr = &config.locks[lock_index].results.discharge_to_sea;
   } else if (match_key(quantity, "salinity_to_sea")) {
-    source_ptr = &locks[lock_index].results.salinity_to_sea;
+    source_ptr = &config.locks[lock_index].results.salinity_to_sea;
   }
 
   if (dst_ptr == NULL || source_ptr == NULL) {
@@ -239,10 +237,10 @@ int update(double dt) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
 #endif
-  current_time += dt;
+  config.current_time += dt;
 
   // TODO: Add loop over locks.
-  status = sealock_update(&locks[lock_index], current_time);
+  status = sealock_update(&config.locks[lock_index], config.current_time);
 
   return ZSF_TO_DIMR_STATUS(status);
 }
@@ -300,7 +298,7 @@ void get_current_time(double *current_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *current_time_ptr);
 #endif
-  *current_time_ptr = current_time;
+  *current_time_ptr = config.current_time;
 }
 
 // Points to a Log object (see log.h in DIMR)
