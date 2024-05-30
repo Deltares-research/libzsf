@@ -25,34 +25,62 @@ int sealock_load_data(sealock_state_t* lock, char* filepath) {
 }
 
 
-int _sealock_update_cycle_average(sealock_state_t* lock, double time) {
+void _sealock_update_current_row(sealock_state_t* lock, double time) {
   size_t row = lock->current_row;
-  while (time > lock->times[row] && row < lock->times_len) { row++; }
-  lock->current_row = row ? row - 1 : SEALOCK_OK;
-  get_csv_row_data(&lock->timeseries_data, lock->current_row, &lock->parameters);
-  return zsf_calc_steady(&lock->parameters, &lock->results, NULL);
+  while (time > lock->times[row] && row < lock->times_len) {
+    row++;
+  }
+  lock->current_row = row ? row - 1 : 0;
 }
 
 
-int _sealock_update_phase_wise(sealock_state_t *lock, double time) {
+int _sealock_update_cycle_average_data(sealock_state_t* lock, double time) {
+  _sealock_update_current_row(lock, time);
+  return get_csv_row_data(&lock->timeseries_data, lock->current_row, &lock->parameters) == CSV_OK
+             ? SEALOCK_OK
+             : SEALOCK_ERROR;
+}
+
+
+int _sealock_update_phase_wise_data(sealock_state_t *lock, double time) {
+  _sealock_update_current_row(lock, time);
   // TODO: implement me: See UNST-7866.
   return SEALOCK_OK;
 }
 
 
-int sealock_update(sealock_state_t *lock, double time) {
+int sealock_update_data(sealock_state_t *lock, double time) {
   int status = SEALOCK_OK;
 
   switch (lock->computation_mode) {
+  case cycle_average_mode:
+    status = _sealock_update_cycle_average_data(lock, time);
+    break;
+  case phase_wise_mode:
+    status = _sealock_update_phase_wise_data(lock, time);
+    break;
+  default:
+    status = SEALOCK_ERROR; // Should never happen.
+    break;
+  }
+  return status;
+}
+
+
+int sealock_update(sealock_state_t *lock, double time) {
+  int status = sealock_update_data(lock, time);
+  if (status == SEALOCK_OK) {
+    switch (lock->computation_mode) {
     case cycle_average_mode:
-      status = _sealock_update_cycle_average(lock, time);
+      status = zsf_calc_steady(&lock->parameters, &lock->results, NULL);
       break;
     case phase_wise_mode:
-      status = _sealock_update_phase_wise(lock, time);
+      // TODO: Implement me: See UNST-7866.
       break;
     default:
       status = SEALOCK_ERROR; // Should never happen.
       break;
+    }
   }
   return status;
 }

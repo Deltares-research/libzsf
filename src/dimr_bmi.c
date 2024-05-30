@@ -9,57 +9,41 @@
 
 #define ZSF_VERBOSE 1
 #define ZSF_KEY_SEPARATOR '/'
-
 #define ZSF_TO_DIMR_STATUS(s) ((s) == 0 ? DIMR_BMI_OK : DIMR_BMI_FAILURE)
 
 
-// Keep track of multiple sea-lock instances.
+// Global conbfiguration.
 zsf_config_t config;
 
 // Exported
 int initialize(const char *config_file) {
   int status = 0;
-  sealock_index_t lock_index = 0; // Fixed for now.
-  size_t num_rows = 0;
-  // TODO: Read these items from .ini file.
-  // status = zsf_config_load(&config, config_file);
-  // (MOCKUP) Start ini config items.
-  zsf_computation_mode_t computation_mode = cycle_average_mode;
-  char *sealock_operational_parameters = "sealock_A.csv";
-  double initial_head_lock = 0.0;
-  double initial_salinity_lock = 15.0;
-  double initial_saltmass_lock = 12344.0;
-  double initial_temperature_lock = 10.1; // Where do we map this?
-  double initial_volume_ship_in_lock = 0.0;
-  double lock_length = 300.0;
-  double lock_width = 25.0;
-  double lock_bottom = -7.0;
-
-  // init calculation parameters with defaults.
-  zsf_param_default(&config.locks[lock_index].parameters);
-
-  // Set up (overwrite) user provided initial lock parameters.
-  config.locks[lock_index].computation_mode = cycle_average_mode;
-  config.locks[lock_index].parameters.lock_length = lock_length;
-  config.locks[lock_index].parameters.lock_width = lock_width;
-  config.locks[lock_index].parameters.lock_bottom = lock_bottom;
-  config.locks[lock_index].phase_state.saltmass_lock = initial_saltmass_lock;
-  config.locks[lock_index].phase_state.volume_ship_in_lock = initial_volume_ship_in_lock;
-  config.locks[lock_index].phase_state.salinity_lock = initial_salinity_lock;
-  config.locks[lock_index].phase_state.head_lock = initial_head_lock;
-  // TODO: Map temperature somewhere?
-  // (MOCKUP) End ini config items.
-
+  sealock_index_t lock_index = 0; // Fixed to 0 for now.
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\" ) called.\n", __func__, config_file);
 #endif
 
-  status = sealock_load_data(&config.locks[lock_index], sealock_operational_parameters);
-  status = sealock_update(&config.locks[lock_index], config.current_time);
+  // Init calculation parameters with defaults.
+  zsf_param_default(&config.locks[lock_index].parameters);
+  
+  // Read ini file.
+  status = zsf_config_load(&config, config_file);
+  if (status)
+    return ZSF_TO_DIMR_STATUS(status);
+
+  // Load timeseries data.
+  status = sealock_load_data(&config.locks[lock_index], config.locks[lock_index].operational_parameters_file);
+  if (status)
+    return ZSF_TO_DIMR_STATUS(status);
+
+  // Do one update to properly populate all parameters from timeseries for current time.
+  status = sealock_update_data(&config.locks[lock_index], config.current_time);
+  if (status)
+    return ZSF_TO_DIMR_STATUS(status);
 
   // Initialize parameters consistent with current and given settings.
-  status |= zsf_initialize_state(&config.locks[lock_index].parameters, &config.locks[lock_index].phase_state,
+  status = zsf_initialize_state(&config.locks[lock_index].parameters, &config.locks[lock_index].phase_state,
                                  config.locks[lock_index].phase_state.salinity_lock,
                                  config.locks[lock_index].phase_state.head_lock);
 
@@ -71,9 +55,10 @@ int finalize() {
 #if ZSF_VERBOSE
   printf("ZSF: %s() called.\n", __func__);
 #endif
-  // TODO: Implement me
+  zsf_config_unload(&config);
   return DIMR_BMI_OK; // Should always return DIMR_BMI_OK
 }
+
 
 // parse key of format '<vartype>/<lock_id>/<quantity>'.
 inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **quantity_ptr) {
