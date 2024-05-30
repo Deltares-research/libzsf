@@ -26,6 +26,7 @@ typedef struct sealock_state_struct {
   zsf_results_t results;
   zsf_aux_results_t aux_results;
   zsf_computation_mode_t computation_mode;
+  char *operational_parameters_file;
   csv_context_t timeseries_data;
   size_t current_row;
   double *times;
@@ -34,6 +35,7 @@ typedef struct sealock_state_struct {
 
 
 int sealock_load_data(sealock_state_t *lock, char *filepath);
+int sealock_update_data(sealock_state_t *lock, double time);
 int sealock_update(sealock_state_t *lock, double time);
 
 #  if defined(__cplusplus)

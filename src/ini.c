@@ -135,8 +135,13 @@ int ini_read(char *filepath, ini_callback callback, void *data_ptr)
         parse_pos = _skip_space(parse_pos);
         if (_parse_value(&parse_pos, value_str) != INI_OK)
         { error_code = line_no; break; }
-        if (callback(section, key_str, value_str, data_ptr) != INI_OK)
-        { error_code = line_no; break; }
+        if (*value_str) {
+          // Only try to update if there is a non-empty value string.
+          if (callback(section, key_str, value_str, data_ptr) != INI_OK) {
+            error_code = line_no;
+            break;
+          }
+        }
       }
 
       parse_pos = _skip_space(parse_pos);
