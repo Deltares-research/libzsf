@@ -21,6 +21,7 @@ int _zsf_ini_handler(char *section, char *key, char *value, void* data_ptr)
 
   errno = 0;
   if (!strcmp(section, "sealock")) {
+    config_ptr->num_locks = 1;
     if (!strcmp(key, "computation_mode")) {
       if (!strcmp(value, "cycle_average")) {
         config_ptr->locks[lock_index].computation_mode = cycle_average_mode;
