@@ -7,27 +7,26 @@
 #include <string.h>
 #include <ctype.h>
 
-#define INI_STRING_DELIM '"'
-#define INI_REM_CHAR1 '#'
-#define INI_REM_CHAR2 ';'
-#define INI_SECTION_START_CHAR '['
-#define INI_SECTION_END_CHAR ']'
-#define INI_EQU_CHAR1 '='
-#define INI_EQU_CHAR2 ':'
-
-#define _AT_EOL(p)           (*(p) == '\n')
-#define _AT_REMARK(p)        (*(p) == INI_REM_CHAR1 || *(p) == INI_REM_CHAR2)
-#define _AT_EQUALS(p)        (*(p) == INI_EQU_CHAR1 || *(p) == INI_EQU_CHAR2)
-#define _AT_SECTION_START(p) (*(p) == INI_SECTION_START_CHAR)
-#define _AT_SECTION_END(p)   (*(p) == INI_SECTION_END_CHAR)
-
 #define INI_SECTION_LEN (200)
-#define INI_LINE_LEN   (4096)
+#define INI_LINE_LEN (4096)
 
+static const char ini_string_delim = '"';
+static const char ini_rem_char1 = '#';
+static const char ini_rem_char2 = ';';
+static const char ini_section_start_char = '[';
+static const char ini_section_end_char = ']';
+static const char ini_equal_char1 = '=';
+static const char ini_equal_char2 = ':';
+
+static inline int _at_eol(const char *p) { return (*p == '\n'); }
+static inline int _at_remark(const char *p) { return (*p == ini_rem_char1 || *p == ini_rem_char2); }
+static inline int _at_equals(const char *p) { return (*p == ini_equal_char1 || *p == ini_equal_char2); }
+static inline int _at_section_start(const char *p) { return (*p == ini_section_start_char); }
+static inline int _at_section_end(const char *p) { return (*p == ini_section_end_char); }
 
 char *_skip_space(char *ptr)
 {
-  while(ptr && *ptr && isspace(*ptr) && !_AT_EOL(ptr)) { ptr++; }
+  while(ptr && *ptr && isspace(*ptr) && !_at_eol(ptr)) { ptr++; }
   return ptr;
 }
 
@@ -37,12 +36,12 @@ int _parse_section_header(char **parse_pos_ptr, char *section)
   int i = 0;
   char *parse_pos = *parse_pos_ptr;
   parse_pos++; // Skip '['
-  while (*parse_pos && !_AT_SECTION_END(parse_pos) && i < INI_SECTION_LEN) {
+  while (*parse_pos && !_at_section_end(parse_pos) && i < INI_SECTION_LEN) {
     section[i++] = *parse_pos;
     parse_pos++;
   }
   section[i] = '\0';
-  if (!_AT_SECTION_END(parse_pos)) { return INI_FAIL; }
+  if (!_at_section_end(parse_pos)) { return INI_FAIL; }
   parse_pos++; // Skip ']'
   *parse_pos_ptr = parse_pos;
   return INI_OK;
@@ -53,13 +52,13 @@ int _parse_key(char **parse_pos_ptr, char *key_str)
 {
   int i = 0;
   char *parse_pos = *parse_pos_ptr;
-  while (*parse_pos && !_AT_EQUALS(parse_pos) && i < INI_LINE_LEN) {
+  while (*parse_pos && !_at_equals(parse_pos) && i < INI_LINE_LEN) {
     key_str[i++] = *parse_pos;
     parse_pos++;
   }
   while (i && isspace(key_str[i-1])) { i--; }
   key_str[i] = '\0';
-  if (!_AT_EQUALS(parse_pos)) { return INI_FAIL; }
+  if (!_at_equals(parse_pos)) { return INI_FAIL; }
   *parse_pos_ptr = parse_pos;
   return INI_OK;
 }
@@ -69,18 +68,18 @@ int _parse_value(char **parse_pos_ptr, char *value_str)
 {
   int i = 0;
   char *parse_pos = *parse_pos_ptr;
-  if (*parse_pos == INI_STRING_DELIM) {
+  if (*parse_pos == ini_string_delim) {
     parse_pos++; // Skip '"'
-    while(*parse_pos && *parse_pos != INI_STRING_DELIM && i < INI_LINE_LEN)
+    while(*parse_pos && *parse_pos != ini_string_delim && i < INI_LINE_LEN)
     {
       value_str[i++] = *parse_pos;
       parse_pos++;
     }
-    if (*parse_pos != INI_STRING_DELIM) { return INI_FAIL; }
+    if (*parse_pos != ini_string_delim) { return INI_FAIL; }
     parse_pos++; // Skip '"'
   }
   else {
-    while (*parse_pos && !_AT_REMARK(parse_pos) && !_AT_EOL(parse_pos)) {
+    while (*parse_pos && !_at_remark(parse_pos) && !_at_eol(parse_pos)) {
       value_str[i++] = *parse_pos;
       parse_pos++;
     }
@@ -91,7 +90,7 @@ int _parse_value(char **parse_pos_ptr, char *value_str)
   return INI_OK;
 }
 
-int ini_read(char *filepath, ini_callback callback, void *data_ptr)
+int ini_read(const char *filepath, ini_callback callback, void *data_ptr)
 {
   char section[INI_SECTION_LEN+1];
   char buffer[INI_LINE_LEN+1];
@@ -119,7 +118,7 @@ int ini_read(char *filepath, ini_callback callback, void *data_ptr)
 
       line_no++;
       parse_pos = _skip_space(parse_pos);
-      if (_AT_SECTION_START(parse_pos))
+      if (_at_section_start(parse_pos))
       {
         if (_parse_section_header(&parse_pos, section) != INI_OK)
         { error_code = line_no; break; }
@@ -129,7 +128,7 @@ int ini_read(char *filepath, ini_callback callback, void *data_ptr)
         if (_parse_key(&parse_pos, key_str) != INI_OK)
         { error_code = line_no; break; }
         parse_pos = _skip_space(parse_pos);
-        if (!_AT_EQUALS(parse_pos))
+        if (!_at_equals(parse_pos))
         { error_code = line_no; break; }
         parse_pos++;
         parse_pos = _skip_space(parse_pos);
@@ -145,7 +144,7 @@ int ini_read(char *filepath, ini_callback callback, void *data_ptr)
       }
 
       parse_pos = _skip_space(parse_pos);
-      if (*parse_pos && !(_AT_REMARK(parse_pos) || _AT_EOL(parse_pos)))
+      if (*parse_pos && !(_at_remark(parse_pos) || _at_eol(parse_pos)))
       { error_code = line_no; break; }
   }
 

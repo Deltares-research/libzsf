@@ -20,7 +20,7 @@ typedef struct zsf_config_struct {
   double end_time;
 } zsf_config_t;
 
-int zsf_config_load(zsf_config_t *config_ptr, char *filepath);
+int zsf_config_load(zsf_config_t *config_ptr, const char *filepath);
 void zsf_config_unload(zsf_config_t *config_ptr);
 
 #ifdef __cplusplus

@@ -23,7 +23,7 @@ typedef int (*ini_callback)(char *section, char *key, char *value, void *data_pt
  *          -1 if there was a file i/o problem (file not found or read error).
  *          >0 line number if there was a problem in that line of the file.
  */
-int ini_read(char *filepath, ini_callback callback, void *data_ptr);
+int ini_read(const char *filepath, ini_callback callback, void *data_ptr);
 
 #ifdef __cplusplus
 }
