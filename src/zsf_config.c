@@ -63,7 +63,7 @@ int _zsf_ini_handler(char *section, char *key, char *value, void* data_ptr)
 }
 
 
-int zsf_config_load(zsf_config_t* config_ptr, char* filepath) {
+int zsf_config_load(zsf_config_t* config_ptr, const char* filepath) {
   assert(config_ptr);
   assert(filepath);
   return ini_read(filepath, _zsf_ini_handler, config_ptr);
