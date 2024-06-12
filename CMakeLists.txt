@@ -59,14 +59,14 @@ set(ZSF_SOURCE_FILES
     src/zsf.c
     src/dimr_bmi.c
     src/dimr_bmi.h
-    src/csv.c
-    src/csv.h
+    src/csv/load_csv.c
+    src/csv/load_csv.h
     src/load_time_averaged.h
     src/load_time_averaged.c
     src/sealock.h
     src/sealock.c
-    src/ini.h
-    src/ini.c
+    src/ini/ini_read.h
+    src/ini/ini_read.c
     src/zsf_config.h
     src/zsf_config.c
 )
@@ -82,6 +82,7 @@ set_target_properties (zsf PROPERTIES
     DEFINE_SYMBOL "ZSF_EXPORTS"
     OUTPUT_NAME "zsf"
     PUBLIC_HEADER "include/zsf.h"
+    C_STANDARD 23
 )
 
 add_library(zsf-static STATIC ${ZSF_SOURCE_FILES})
@@ -91,6 +92,7 @@ set_target_properties(zsf-static PROPERTIES
     OUTPUT_NAME "zsf-static"
     PUBLIC_HEADER "include/zsf.h"
     POSITION_INDEPENDENT_CODE ON
+    C_STANDARD 23
 )
 
 set(INSTALL_TARGETS zsf zsf-static)
@@ -106,6 +108,7 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
         COMPILE_DEFINITIONS "ZSF_USE_STDCALL"
         OUTPUT_NAME "zsf-stdcall"
         PUBLIC_HEADER "include/zsf.h"
+        C_STANDARD 23
     )
 
     set(INSTALL_TARGETS ${INSTALL_TARGETS} zsf-stdcall)
