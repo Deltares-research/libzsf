@@ -4,7 +4,7 @@
 #  define _SEALOCK_H_
 
 #include "zsf.h"
-#include "csv.h"
+#include "csv/load_csv.h"
 
 #define SEALOCK_OK (0)
 #define SEALOCK_ERROR (-1)

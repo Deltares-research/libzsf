@@ -1,7 +1,7 @@
 
 #include "zsf_config.h"
-#include "ini.h"
-#include "csv.h"
+#include "ini/ini_read.h"
+#include "csv/load_csv.h"
 
 #include <assert.h>
 #include <string.h>
