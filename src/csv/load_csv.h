@@ -3,16 +3,16 @@
 #pragma once
 
 #ifndef _CSV_H_
-#define _CSV_H_
+#  define _CSV_H_
 
-#include <stddef.h>
+#  include <stddef.h>
 
-#define CSV_OK     (0)
-#define CSV_ERROR (-1)
+#  define CSV_OK (0)
+#  define CSV_ERROR (-1)
 
-#define CSV_SEPARATOR ';'
-#define CSV_MAX_LINE_LENGTH (4096)
-#define CSV_MAX_COLUMNS (100)
+#  define CSV_SEPARATOR ';'
+#  define CSV_MAX_LINE_LENGTH (4096)
+#  define CSV_MAX_COLUMNS (100)
 
 #  ifdef __cplusplus
 extern "C" {
@@ -74,7 +74,6 @@ int unload_csv(csv_context_t *context);
 size_t get_csv_num_rows(csv_context_t *context);
 int get_csv_row_data(csv_context_t *context, size_t row_index, void *struct_ptr);
 int get_csv_column_data(csv_context_t *context, char *label, void *array_ptr, size_t array_len);
-
 
 #  define CSV_SETTER(S, A, VA)                                                                     \
     int set_##A##(void *ptr, csv_value_t value) {                                                  \

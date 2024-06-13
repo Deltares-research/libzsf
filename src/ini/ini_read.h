@@ -2,14 +2,14 @@
 #pragma once
 
 #ifndef _INI_H
-#define _INI_H
+#  define _INI_H
 
-#define INI_OK     (0)  /* okay */
-#define INI_FAIL  (-1)  /* failed */
+#  define INI_OK (0)    /* okay */
+#  define INI_FAIL (-1) /* failed */
 
-#ifdef __cplusplus
+#  ifdef __cplusplus
 extern "C" {
-#endif
+#  endif
 
 typedef int (*ini_callback)(char *section, char *key, char *value, void *data_ptr);
 
@@ -25,8 +25,8 @@ typedef int (*ini_callback)(char *section, char *key, char *value, void *data_pt
  */
 int ini_read(const char *filepath, ini_callback callback, void *data_ptr);
 
-#ifdef __cplusplus
+#  ifdef __cplusplus
 }
-#endif
+#  endif
 
 #endif // _INI_H

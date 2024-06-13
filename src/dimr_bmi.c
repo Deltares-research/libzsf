@@ -62,7 +62,7 @@ int finalize() {
 
 // parse key of format '<vartype>/<lock_id>/<quantity>'.
 inline int parse_key(const char *key, char **vartype_ptr, char **lock_id_ptr, char **quantity_ptr) {
-  char *ptr = (char*)key;
+  char *ptr = (char *)key;
   assert(vartype_ptr != NULL);
   assert(lock_id_ptr != NULL);
   assert(quantity_ptr != NULL);

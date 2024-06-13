@@ -1,17 +1,17 @@
 
 
 #ifndef _SEALOCK_H_
-#  define _SEALOCK_H_
+#define _SEALOCK_H_
 
-#include "zsf.h"
 #include "csv/load_csv.h"
+#include "zsf.h"
 
 #define SEALOCK_OK (0)
 #define SEALOCK_ERROR (-1)
 
-#  if defined(__cplusplus)
+#if defined(__cplusplus)
 extern "C" {
-#  endif
+#endif
 
 typedef unsigned int sealock_index_t;
 
@@ -33,13 +33,12 @@ typedef struct sealock_state_struct {
   size_t times_len;
 } sealock_state_t;
 
-
 int sealock_load_data(sealock_state_t *lock, char *filepath);
 int sealock_update_data(sealock_state_t *lock, double time);
 int sealock_update(sealock_state_t *lock, double time);
 
-#  if defined(__cplusplus)
+#if defined(__cplusplus)
 }
-#  endif
+#endif
 
 #endif // _SEALOCK_H_
