@@ -1,16 +1,15 @@
 
 #include "zsf_config.h"
-#include "ini/ini_read.h"
 #include "csv/load_csv.h"
+#include "ini/ini_read.h"
 
 #include <assert.h>
-#include <string.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 
-int _zsf_ini_handler(char *section, char *key, char *value, void* data_ptr)
-{
-  zsf_config_t *config_ptr = (zsf_config_t*)data_ptr;
+int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
+  zsf_config_t *config_ptr = (zsf_config_t *)data_ptr;
   sealock_index_t lock_index = 0;
   char *end_ptr = NULL;
 
@@ -62,14 +61,13 @@ int _zsf_ini_handler(char *section, char *key, char *value, void* data_ptr)
   return INI_OK;
 }
 
-
-int zsf_config_load(zsf_config_t* config_ptr, const char* filepath) {
+int zsf_config_load(zsf_config_t *config_ptr, const char *filepath) {
   assert(config_ptr);
   assert(filepath);
   return ini_read(filepath, _zsf_ini_handler, config_ptr);
 }
 
-void zsf_config_unload(zsf_config_t* config_ptr) {
+void zsf_config_unload(zsf_config_t *config_ptr) {
   if (config_ptr) {
     while (config_ptr->num_locks) {
       config_ptr->num_locks--;
