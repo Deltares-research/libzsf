@@ -32,13 +32,13 @@ int initialize(const char *config_file) {
     return zsf_to_dimr_status(status);
 
   // Load timeseries data.
-  status = sealock_load_data(&config.locks[lock_index],
+  status = sealock_load_timeseries(&config.locks[lock_index],
                              config.locks[lock_index].operational_parameters_file);
   if (status)
     return zsf_to_dimr_status(status);
 
   // Do one update to properly populate all parameters from timeseries for current time.
-  status = sealock_update_data(&config.locks[lock_index], config.current_time);
+  status = sealock_set_parameters_for_time(&config.locks[lock_index], config.current_time);
   if (status)
     return zsf_to_dimr_status(status);
 
