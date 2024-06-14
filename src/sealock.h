@@ -33,8 +33,8 @@ typedef struct sealock_state_struct {
   size_t times_len;
 } sealock_state_t;
 
-int sealock_load_data(sealock_state_t *lock, char *filepath);
-int sealock_update_data(sealock_state_t *lock, double time);
+int sealock_load_timeseries(sealock_state_t *lock, char *filepath);
+int sealock_set_parameters_for_time(sealock_state_t *lock, double time);
 int sealock_update(sealock_state_t *lock, double time);
 
 #if defined(__cplusplus)

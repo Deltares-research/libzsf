@@ -10,7 +10,7 @@
 extern "C" {
 #  endif
 
-int load_time_averaged_data(csv_context_t *context, char *filepath);
+int load_time_averaged_timeseries(csv_context_t *context, char *filepath);
 
 #  if defined(__cplusplus)
 }
