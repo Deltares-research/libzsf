@@ -220,7 +220,7 @@ int get_value_ptr(char *key, void **dst_ptr) {
 // Update ZSF state.
 // Advances the current time by dt seconds.
 int update(double dt) {
-  int status = 0;
+  int status = DIMR_BMI_OK;
   sealock_index_t lock_index = 0;
 
 #if ZSF_VERBOSE
@@ -228,9 +228,13 @@ int update(double dt) {
 #endif
   config.current_time += (time_t)dt;
 
-  status = sealock_update(&config.locks[lock_index], config.current_time);
+  for (sealock_index_t lock_index = 0; lock_index < config.num_locks; lock_index++) {
+    if (sealock_update(&config.locks[lock_index], config.current_time)) {
+      status = DIMR_BMI_FAILURE;
+    }
+  }
 
-  return zsf_to_dimr_status(status);
+  return status;
 }
 
 int get_var_shape(char *key, int *dims) { // dims -> int[6]
