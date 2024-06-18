@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-typedef unsigned int sealock_index_t;
+typedef int sealock_index_t;
 
 typedef enum zsf_computation_mode_enum {
   cycle_average_mode = 0,
@@ -22,6 +22,7 @@ typedef enum zsf_computation_mode_enum {
 } zsf_computation_mode_t;
 
 typedef struct sealock_state_struct {
+  char *id;
   zsf_param_t parameters;
   zsf_phase_state_t phase_state;
   zsf_results_t results;

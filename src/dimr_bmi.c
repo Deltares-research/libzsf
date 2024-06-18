@@ -10,7 +10,7 @@
 #include "zsf_config.h"
 
 #define ZSF_VERBOSE 1
-const char zsf_key_separator = '/';
+const char *zsf_key_separator = "/";
 static inline int zsf_to_dimr_status(int s) { return ((s) == 0 ? DIMR_BMI_OK : DIMR_BMI_FAILURE); }
 
 // Global conbfiguration.
@@ -62,43 +62,44 @@ int finalize() {
   return DIMR_BMI_OK; // Should always return DIMR_BMI_OK
 }
 
-// parse key of format '<vartype>/<lock_id>/<quantity>'.
-inline int parse_key(const char *key, char **vartype_ptr, char **lock_id_ptr, char **quantity_ptr) {
-  char *ptr = (char *)key;
+// Parse bmi key into type, lock_id and quantity.
+// We assume a bmi request key to be of one of the following forms:
+// 1. "Quantity"
+// 2. "LockID/Quantity"
+// 3. "VarType/LockID/Quantity"
+// 4. "**/VarType/LockId/Quantity" This ignores all parts before.
+// There is no checking done with regards to any configured settings, so
+// we don't make any attempt to recognize what each part is.
+// Note: This function DOES change the content of the supplied key string.
+inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **quantity_ptr) {
+  char *save_ptr;
+  char *token;
+
   assert(vartype_ptr != NULL);
   assert(lock_id_ptr != NULL);
   assert(quantity_ptr != NULL);
 
-  if (key == NULL || *key == '\0') {
-    return 0;
-  }
-
-  // We assume a bmi request key to be of one of the following forms:
-  // 1. "Quantity"
-  // 2. "LockID/Quantity"
-  // 3. "VarType/LockID/Quantity"
-  // 4. "**/VarType/LockId/Quantity" This ignores all parts before.
-  // There is no checking done with regards to any configured settings, so
-  // we don't make any attempt to recognize what each part is.
   *vartype_ptr = NULL;
   *lock_id_ptr = NULL;
-  *quantity_ptr = ptr;
-  while (*ptr) {
-    if (*ptr == zsf_key_separator) {
-      *vartype_ptr = *lock_id_ptr;
-      *lock_id_ptr = *quantity_ptr;
-      *quantity_ptr = ptr + 1;
-    }
-    ptr++;
+  *quantity_ptr = NULL;
+
+  if (key == NULL || *key == '\0') {
+    return 0; // Fail on empty strings.
+  }
+
+  token = strtok(key, zsf_key_separator, &save_ptr);  
+  while (token) {
+    *vartype_ptr = *lock_id_ptr;
+    *lock_id_ptr = *quantity_ptr;
+    *quantity_ptr = token;
+    token = strtok(NULL, zsf_key_separator, &save_ptr);
   }
   return 1;
 }
 
 // Checks if a previously retrieved (sub) key matches a defined key.
 inline int match_key(char *key, char *defined_key) {
-  size_t defined_key_length = strlen(defined_key);
-  return !strncmp(key, defined_key, defined_key_length) &&
-         (!key[defined_key_length] || key[defined_key_length] == zsf_key_separator);
+  return !strcmp(key, defined_key);
 }
 
 // Exported
@@ -118,9 +119,11 @@ int set_var(const char *key, void *src_ptr) {
     return DIMR_BMI_FAILURE;
   }
 
-  // lock_index = get_lock_index(lock_id); // The lock_id is currently ignored and kept at 0.
-  if (lock_index < 0) {
-    return DIMR_BMI_FAILURE;
+  if (lock_id) {
+    lock_index = zsf_config_get_lock_index(&config, lock_id);
+    if (lock_index < 0) {
+      return DIMR_BMI_FAILURE;
+    }
   }
 
 #if ZSF_VERBOSE
@@ -167,9 +170,11 @@ int get_var(const char *key, void **dst_ptr) {
     return DIMR_BMI_FAILURE;
   }
 
-  // lock_index = get_lock_index(lock_id);
-  if (lock_index < 0) {
-    return DIMR_BMI_FAILURE;
+  if (lock_id) {
+    lock_index = zsf_config_get_lock_index(&config, lock_id);
+    if (lock_index < 0) {
+      return DIMR_BMI_FAILURE;
+    }
   }
 
   // Set source based on key(s)...

@@ -11,7 +11,6 @@
 
 int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
   zsf_config_t *config_ptr = (zsf_config_t *)data_ptr;
-  sealock_index_t lock_index = 0;
   char *end_ptr = NULL;
 
   assert(section);
@@ -21,8 +20,14 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
 
   errno = 0;
   if (!strcmp(section, "sealock")) {
-    config_ptr->num_locks = 1;
-    if (!strcmp(key, "computation_mode")) {
+    sealock_index_t lock_index = config_ptr->num_locks;
+    if (!*key) {
+      if (config_ptr->num_locks < ZSF_MAX_LOCKS) {
+        config_ptr->num_locks++;
+      }
+    } else if (!strcmp(section, "id")) {
+      config_ptr->locks[lock_index].id = strdup(value);
+    } else if (!strcmp(key, "computation_mode")) {
       if (!strcmp(value, "cycle_average")) {
         config_ptr->locks[lock_index].computation_mode = cycle_average_mode;
       } else if (!strcmp(value, "phase_wise")) {
@@ -77,7 +82,19 @@ void zsf_config_unload(zsf_config_t *config_ptr) {
       config_ptr->num_locks--;
       unload_csv(&config_ptr->locks[config_ptr->num_locks].timeseries_data);
       free(config_ptr->locks[config_ptr->num_locks].operational_parameters_file);
+      free(config_ptr->locks[config_ptr->num_locks].id);
     }
   }
   return;
+}
+
+// Find sealock in config by id.
+// Returns -1 if not found.
+sealock_index_t zsf_config_get_lock_index(zsf_config_t *config_ptr, char *lock_id) {
+  for (sealock_index_t index = 0; index < config_ptr->num_locks; index++) {
+    if (!strcmp(lock_id, config_ptr->locks[index].id)) {
+      return index;
+    }
+  }
+  return -1;
 }
