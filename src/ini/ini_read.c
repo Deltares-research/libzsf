@@ -130,6 +130,11 @@ int ini_read(const char *filepath, ini_callback callback, void *data_ptr) {
         error_code = line_no;
         break;
       }
+      // Call callback with empty key to signal new section block.
+      if (callback(section, "", "", data_ptr) != INI_OK) {
+        error_code = line_no;
+        break;
+      }
     } else if (isalpha(*parse_pos)) {
       if (_parse_key(&parse_pos, key_str) != INI_OK) {
         error_code = line_no;
