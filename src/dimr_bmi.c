@@ -70,10 +70,10 @@ int finalize() {
 // 4. "**/VarType/LockId/Quantity" This ignores all parts before.
 // There is no checking done with regards to any configured settings, so
 // we don't make any attempt to recognize what each part is.
-// Note: This function DOES change the content of the supplied key string.
+// Note1: This function DOES change the content of the supplied key string.
+// Note2: This function is NOT thread safe. (strtok_r() does not exist in MSVC)
 inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **quantity_ptr) {
-  char *save_ptr;
-  char *token;
+  char *token = NULL;
 
   assert(vartype_ptr != NULL);
   assert(lock_id_ptr != NULL);
@@ -87,12 +87,12 @@ inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **q
     return 0; // Fail on empty strings.
   }
 
-  token = strtok(key, zsf_key_separator, &save_ptr);  
+  token = strtok(key, zsf_key_separator);
   while (token) {
     *vartype_ptr = *lock_id_ptr;
     *lock_id_ptr = *quantity_ptr;
     *quantity_ptr = token;
-    token = strtok(NULL, zsf_key_separator, &save_ptr);
+    token = strtok(NULL, zsf_key_separator);
   }
   return 1;
 }
