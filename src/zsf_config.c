@@ -21,12 +21,12 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
   errno = 0;
   if (!strcmp(section, "sealock")) {
     sealock_index_t lock_index = config_ptr->num_locks - 1;
-    assert(lock_index >= 0);
+    assert(!*key || (*key && lock_index >= 0));
     if (!*key) {
       if (config_ptr->num_locks < ZSF_MAX_LOCKS) {
         config_ptr->num_locks++;
       }
-    } else if (!strcmp(section, "id")) {
+    } else if (!strcmp(key, "id")) {
       config_ptr->locks[lock_index].id = strdup(value);
     } else if (!strcmp(key, "computation_mode")) {
       if (!strcmp(value, "cycle_average")) {
