@@ -19,36 +19,42 @@ zsf_config_t config;
 // Exported
 int initialize(const char *config_file) {
   int status = 0;
-  sealock_index_t lock_index = 0; // Fixed to 0 for now.
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\" ) called.\n", __func__, config_file);
 #endif
-
-  // Init calculation parameters with defaults.
-  zsf_param_default(&config.locks[lock_index].parameters);
 
   // Read ini file.
   status = zsf_config_load(&config, config_file);
   if (status)
     return zsf_to_dimr_status(status);
 
-  // Load timeseries data.
-  status = sealock_load_timeseries(&config.locks[lock_index],
-                             config.locks[lock_index].operational_parameters_file);
-  if (status)
-    return zsf_to_dimr_status(status);
+  if (!config.num_locks)
+    return DIMR_BMI_FAILURE;
 
-  // Do one update to properly populate all parameters from timeseries for current time.
-  status = sealock_set_parameters_for_time(&config.locks[lock_index], config.current_time);
-  if (status)
-    return zsf_to_dimr_status(status);
+  for (sealock_index_t lock_index = 0; lock_index < config.num_locks; lock_index++) {
+    // Init calculation parameters with defaults.
+    zsf_param_default(&config.locks[lock_index].parameters);
 
-  // Initialize parameters consistent with current and given settings.
-  status = zsf_initialize_state(&config.locks[lock_index].parameters,
-                                &config.locks[lock_index].phase_state,
-                                config.locks[lock_index].phase_state.salinity_lock,
-                                config.locks[lock_index].phase_state.head_lock);
+    // Load timeseries data when required.
+    if (config.locks[lock_index].operational_parameters_file) {
+      status = sealock_load_timeseries(&config.locks[lock_index],
+                                       config.locks[lock_index].operational_parameters_file);
+      if (status)
+        return zsf_to_dimr_status(status);
+    }
+
+    // Do one update to properly populate all parameters from timeseries for current time.
+    status = sealock_set_parameters_for_time(&config.locks[lock_index], config.current_time);
+    if (status)
+      return zsf_to_dimr_status(status);
+
+    // Initialize parameters consistent with current and given settings.
+    status = zsf_initialize_state(&config.locks[lock_index].parameters,
+                                  &config.locks[lock_index].phase_state,
+                                  config.locks[lock_index].phase_state.salinity_lock,
+                                  config.locks[lock_index].phase_state.head_lock);
+  }
 
   return zsf_to_dimr_status(status);
 }
@@ -97,14 +103,19 @@ inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **q
   return 1;
 }
 
-// Checks if a previously retrieved (sub) key matches a defined key.
-inline int match_key(char *key, char *defined_key) {
-  return !strcmp(key, defined_key);
+// Copy key into buffer
+void copy_key(const char *src, char *dst) {
+  strncpy(dst, src, BMI_MAX_VAR_NAME);
+  dst[BMI_MAX_VAR_NAME] = '\0';
 }
+
+// Checks if a previously retrieved (sub) key matches a defined key.
+inline static int match_key(char *key, char *defined_key) { return !strcmp(key, defined_key); }
 
 // Exported
 // In BMI 2.0 = set_value
 int set_var(const char *key, void *src_ptr) {
+  char keystr[BMI_MAX_VAR_NAME + 1];
   sealock_index_t lock_index = 0;
   double *dest_ptr = NULL;
   char *quantity = NULL;
@@ -115,7 +126,8 @@ int set_var(const char *key, void *src_ptr) {
   printf("ZSF: %s( \"%s\", *src_ptr = %g) called.\n", __func__, key, *(double *)src_ptr);
 #endif
 
-  if (!parse_key(key, &vartype, &lock_id, &quantity)) {
+  copy_key(key, keystr);
+  if (!parse_key(keystr, &vartype, &lock_id, &quantity)) {
     return DIMR_BMI_FAILURE;
   }
 
@@ -156,17 +168,19 @@ int set_var(const char *key, void *src_ptr) {
 // Exported
 // In BMI 2.0 = get_value
 int get_var(const char *key, void **dst_ptr) {
-#if ZSF_VERBOSE
-  printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
-#endif
-
   sealock_index_t lock_index = 0;
   double *source_ptr = NULL;
   char *quantity = NULL;
   char *vartype = NULL;
   char *lock_id = NULL;
+  char keystr[BMI_MAX_VAR_NAME + 1];
 
-  if (!parse_key(key, &vartype, &lock_id, &quantity)) {
+#if ZSF_VERBOSE
+  printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
+#endif
+
+  copy_key(key, keystr);
+  if (!parse_key(keystr, &vartype, &lock_id, &quantity)) {
     return DIMR_BMI_FAILURE;
   }
 
