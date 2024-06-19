@@ -20,7 +20,8 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
 
   errno = 0;
   if (!strcmp(section, "sealock")) {
-    sealock_index_t lock_index = config_ptr->num_locks;
+    sealock_index_t lock_index = config_ptr->num_locks - 1;
+    assert(lock_index >= 0);
     if (!*key) {
       if (config_ptr->num_locks < ZSF_MAX_LOCKS) {
         config_ptr->num_locks++;
@@ -73,6 +74,10 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
 int zsf_config_load(zsf_config_t *config_ptr, const char *filepath) {
   assert(config_ptr);
   assert(filepath);
+  config_ptr->num_locks = 0;
+  config_ptr->start_time = 0.0;
+  config_ptr->end_time = 0.0;
+  config_ptr->current_time = 0.0;
   return ini_read(filepath, _zsf_ini_handler, config_ptr);
 }
 
