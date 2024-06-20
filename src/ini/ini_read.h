@@ -1,8 +1,8 @@
 
 #pragma once
 
-#ifndef _INI_H
-#  define _INI_H
+#ifndef _INI_READ_H
+#  define _INI_READ_H
 
 #  define INI_OK (0)    /* okay */
 #  define INI_FAIL (-1) /* failed */
@@ -13,10 +13,10 @@ extern "C" {
 
 typedef int (*ini_callback)(char *section, char *key, char *value, void *data_ptr);
 
-/* read ini file at filepath, for each key/value pair in the file
+/* Read a .ini file at filepath, for each key/value pair in the file
  * the callback function is called. It is up to the callback function
  * to figure out what to do with the value and store it into memory
- * pointed to by dataptr in a meaningful way. the callback function
+ * pointed to by data_ptr in a meaningful way. the callback function
  * should return INI_FAIL if there was a fatal problem, or INI_OK otherwise.
  *
  * Returns: 0  if all was ok.
@@ -29,4 +29,4 @@ int ini_read(const char *filepath, ini_callback callback, void *data_ptr);
 }
 #  endif
 
-#endif // _INI_H
+#endif // _INI_READ_H
