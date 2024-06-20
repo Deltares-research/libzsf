@@ -54,7 +54,7 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
     }
   }
 
-  if (errno || end_ptr == value) {
+  if (errno || end_ptr == value || (end_ptr && *end_ptr)) {
     return INI_FAIL;
   }
 
