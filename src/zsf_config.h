@@ -15,9 +15,9 @@ extern "C" {
 typedef struct zsf_config_struct {
   sealock_state_t locks[ZSF_MAX_LOCKS];
   unsigned int num_locks;
-  double start_time;
-  double current_time;
-  double end_time;
+  time_t start_time;
+  time_t current_time;
+  time_t end_time;
 } zsf_config_t;
 
 int zsf_config_load(zsf_config_t *config_ptr, const char *filepath);
