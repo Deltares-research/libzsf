@@ -2,6 +2,7 @@
 #include "zsf_config.h"
 #include "csv/load_csv.h"
 #include "ini/ini_read.h"
+#include "timestamp.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -50,7 +51,10 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
     }
   } else if (!strcmp(section, "general") || !*section) {
     if (!strcmp(key, "start_time")) {
-      config_ptr->current_time = strtod(value, &end_ptr);
+      config_ptr->start_time = timestamp_string_to_time(value, &end_ptr);
+      config_ptr->current_time = config_ptr->start_time;
+    } else if (!strcmp(key, "end_time")) {
+      config_ptr->end_time = timestamp_string_to_time(value, &end_ptr);
     }
   }
 

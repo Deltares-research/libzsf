@@ -1,6 +1,8 @@
 
 #include "dimr_bmi.h"
 #include "config.h"
+#include "timestamp.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -215,6 +217,8 @@ int get_value_ptr(char *key, void **dst_ptr) {
 }
 
 // Exported
+// Update ZSF state.
+// Advances the current time by dt seconds.
 int update(double dt) {
   int status = 0;
   sealock_index_t lock_index = 0;
@@ -222,9 +226,8 @@ int update(double dt) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
 #endif
-  config.current_time += dt;
+  config.current_time += (time_t)dt;
 
-  // TODO: Add loop over locks.
   status = sealock_update(&config.locks[lock_index], config.current_time);
 
   return zsf_to_dimr_status(status);
@@ -256,7 +259,7 @@ void get_start_time(double *start_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *start_time_ptr);
 #endif
-  // TODO: Implement me
+  *start_time_ptr = time_to_timestamp(config.start_time);
 }
 
 // Exported
@@ -264,7 +267,7 @@ void get_end_time(double *end_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *end_time_ptr);
 #endif
-  // TODO: Implement me
+  *end_time_ptr = time_to_timestamp(config.end_time);
 }
 
 // Exported
@@ -280,15 +283,6 @@ void get_current_time(double *current_time_ptr) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, *current_time_ptr);
 #endif
-  *current_time_ptr = config.current_time;
+  *current_time_ptr = time_to_timestamp(config.current_time);
 }
 
-// Points to a Log object (see log.h in DIMR)
-void set_dimr_logger(void *logptr) {
-  // TODO: Implement me?
-}
-
-// Takes a function pointer (not sure what it is)
-void set_logger_c_callback(void (*callback)(char *msg)) {
-  // TODO: Implement me?
-}
