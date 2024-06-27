@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
+// Convert 'double' timestamp to time_t.
+// Returns -1 on error.
 time_t timestamp_to_time(double timestamp) {
   long long cts = timestamp;
   struct tm ts;
@@ -39,19 +41,25 @@ time_t *timestamp_array_to_times(double *timestamps, size_t length) {
   return times;
 }
 
+// Convert time_t time to timstamp.
+// Returns -1.0 on error.
 double time_to_timestamp(time_t t) {
-  double dts = 0.0;
+  double dts = -1.0;
   struct tm *ts;
-  ts = localtime(&t);
 
-  dts = (ts->tm_year + 1900.0) * 100000000.0;
-  dts += (ts->tm_mon + 1.0) * 1000000.0;
-  dts += ts->tm_hour * 100.0;
-  dts += ts->tm_min;
+  if (t >= 0) {
+    ts = localtime(&t);
+    dts = (ts->tm_year + 1900.0) * 100000000.0;
+    dts += (ts->tm_mon + 1.0) * 1000000.0;
+    dts += ts->tm_hour * 100.0;
+    dts += ts->tm_min;
+  }
 
   return dts;
 }
 
+// Convert timestamp 'YYYYMMDDhhmm' string format to time_t.
+// Returns -1 on error.
 time_t timestamp_string_to_time(const char *str, char **end_ptr) {
   double timestamp = strtod(str, end_ptr);
 
@@ -59,5 +67,5 @@ time_t timestamp_string_to_time(const char *str, char **end_ptr) {
     return timestamp_to_time(timestamp);
   }
 
-  return 0;
+  return -1;
 }
