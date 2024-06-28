@@ -95,6 +95,8 @@ set_target_properties(zsf-static PROPERTIES
     C_STANDARD 23
 )
 
+target_include_directories(zsf-static INTERFACE src)
+
 set(INSTALL_TARGETS zsf zsf-static)
 
 # We also generate a 32-bits stdcall version for VBA
@@ -113,6 +115,11 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 
     set(INSTALL_TARGETS ${INSTALL_TARGETS} zsf-stdcall)
 endif()
+
+add_subdirectory(src/unity)
+
+# Unit tests
+add_subdirectory(tests)
 
 install(
     TARGETS
