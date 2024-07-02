@@ -7,6 +7,8 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
+// Create a linear profile starting with discharge_0 at z = 0 and discharge_1 at z = 1.
+// Use number_of_positions nodes in the piecewise linear profile.
 static int create_linear_profile(profile *profile, const int number_of_positions,
                                  const double discharge_0, const double discharge_1) {
   profile->number_of_positions = number_of_positions;
