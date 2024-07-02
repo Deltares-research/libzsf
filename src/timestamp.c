@@ -8,20 +8,20 @@
 // Convert 'double' timestamp to time_t.
 // Returns -1 on error.
 time_t timestamp_to_time(double timestamp) {
-  long long cts = timestamp;
-  struct tm ts;
+  long long converted_ts = timestamp;
+  struct tm date_time;
 
-  ts.tm_sec = 0;
-  ts.tm_min = cts % 100;
-  ts.tm_hour = (cts / 100) % 100;
-  ts.tm_mday = (cts / 10000) % 100;
-  ts.tm_mon = (cts / 1000000) % 100 - 1;
-  ts.tm_year = (cts / 100000000) - 1900;
-  ts.tm_wday = 0;
-  ts.tm_yday = 0;
-  ts.tm_isdst = -1;
+  date_time.tm_sec = 0;
+  date_time.tm_min = converted_ts % 100;
+  date_time.tm_hour = (converted_ts / 100) % 100;
+  date_time.tm_mday = (converted_ts / 10000) % 100;
+  date_time.tm_mon = (converted_ts / 1000000) % 100 - 1;
+  date_time.tm_year = (converted_ts / 100000000) - 1900;
+  date_time.tm_wday = 0;
+  date_time.tm_yday = 0;
+  date_time.tm_isdst = -1;
 
-  return mktime(&ts);
+  return mktime(&date_time);
 }
 
 // Duplicate and convert timestamp double array to a time_t array.
@@ -30,7 +30,7 @@ time_t *timestamp_array_to_times(double *timestamps, size_t length) {
   time_t *times = NULL;
 
   if (length) {
-    times = (time_t *)malloc(sizeof(time_t) * length);
+    times = malloc(sizeof(time_t) * length);
     if (times) {
       for (size_t i = 0; i < length; i++) {
         times[i] = timestamp_to_time(timestamps[i]);
@@ -44,18 +44,19 @@ time_t *timestamp_array_to_times(double *timestamps, size_t length) {
 // Convert time_t time to timstamp.
 // Returns -1.0 on error.
 double time_to_timestamp(time_t t) {
-  double dts = -1.0;
-  struct tm *ts;
+  double timestamp = -1.0;
+  struct tm *date_time;
 
   if (t >= 0) {
-    ts = localtime(&t);
-    dts = (ts->tm_year + 1900.0) * 100000000.0;
-    dts += (ts->tm_mon + 1.0) * 1000000.0;
-    dts += ts->tm_hour * 100.0;
-    dts += ts->tm_min;
+    date_time = localtime(&t);
+    timestamp = (date_time->tm_year + 1900.0) * 100000000.0;
+    timestamp += (date_time->tm_mon + 1.0) * 1000000.0;
+    timestamp += date_time->tm_mday * 10000.0;
+    timestamp += date_time->tm_hour * 100.0;
+    timestamp += date_time->tm_min;
   }
 
-  return dts;
+  return timestamp;
 }
 
 // Convert timestamp 'YYYYMMDDhhmm' string format to time_t.
