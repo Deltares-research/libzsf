@@ -1,6 +1,6 @@
 
-#ifndef _TIMESTAMP_H_
-#define _TIMESTAMP_H_
+#ifndef TIMESTAMP_H
+#define TIMESTAMP_H
 
 #include <time.h>
 
@@ -17,4 +17,4 @@ time_t timestamp_string_to_time(const char *str, char **end_ptr);
 }
 #endif
 
-#endif // _TIMESTAMP_H_
+#endif // TIMESTAMP_H

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#ifndef _CSV_H_
-#  define _CSV_H_
+#ifndef CSV_H
+#  define CSV_H
 
 #  include <stddef.h>
 
@@ -95,4 +95,4 @@ int set_dummy(void *ptr, csv_value_t value);
 }
 #  endif
 
-#endif // _CSV_H_
+#endif // CSV_H

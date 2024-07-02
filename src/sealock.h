@@ -1,7 +1,7 @@
 
 
-#ifndef _SEALOCK_H_
-#define _SEALOCK_H_
+#ifndef SEALOCK_H
+#define SEALOCK_H
 
 #include "csv/load_csv.h"
 #include "zsf.h"
@@ -42,4 +42,4 @@ int sealock_update(sealock_state_t *lock, time_t time);
 }
 #endif
 
-#endif // _SEALOCK_H_
+#endif // SEALOCK_H
