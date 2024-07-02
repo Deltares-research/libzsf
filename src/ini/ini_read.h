@@ -1,8 +1,8 @@
 
 #pragma once
 
-#ifndef _INI_READ_H
-#  define _INI_READ_H
+#ifndef INI_READ_H
+#  define INI_READ_H
 
 #  define INI_OK (0)    /* okay */
 #  define INI_FAIL (-1) /* failed */
@@ -29,4 +29,4 @@ int ini_read(const char *filepath, ini_callback callback, void *data_ptr);
 }
 #  endif
 
-#endif // _INI_READ_H
+#endif // INI_READ_H
