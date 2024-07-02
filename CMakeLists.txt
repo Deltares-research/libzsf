@@ -59,6 +59,8 @@ set(ZSF_SOURCE_FILES
     src/zsf.c
     src/dimr_bmi.c
     src/dimr_bmi.h
+    src/io_layer_distribution.c
+    src/io_layer_distribution.h
     src/csv/load_csv.c
     src/csv/load_csv.h
     src/load_time_averaged.h
