@@ -6,7 +6,7 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-static void test_version_number(void) {
+static void test_version_string(void) {
   char *version_string = NULL;
   get_version_string(&version_string);
   TEST_ASSERT(strlen(version_string) > 0);
@@ -16,7 +16,7 @@ static void test_version_number(void) {
 int main(void) {
   UNITY_BEGIN();
 
-  RUN_TEST(test_version_number);
+  RUN_TEST(test_version_string);
 
   return UNITY_END();
 }
