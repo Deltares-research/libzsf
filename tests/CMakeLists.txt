@@ -13,3 +13,7 @@ set_target_properties(test_dependencies PROPERTIES C_STANDARD 23)
 add_executable(test_dimr_bmi test_dimr_bmi.c)
 target_link_libraries(test_dimr_bmi PRIVATE test_dependencies)
 add_test(test_dimr_bmi test_dimr_bmi)
+
+add_executable(test_io_layer_distribution test_io_layer_distribution.c)
+target_link_libraries(test_io_layer_distribution PRIVATE test_dependencies)
+add_test(test_io_layer_distribution test_io_layer_distribution)
