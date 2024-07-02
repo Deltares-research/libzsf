@@ -36,7 +36,7 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
   return SEALOCK_ERROR;
 }
 
-void _sealock_update_current_row(sealock_state_t *lock, time_t time) {
+static void sealock_update_current_row(sealock_state_t *lock, time_t time) {
   size_t row = lock->current_row;
   while (time > lock->times[row] && row < lock->times_len) {
     row++;
@@ -44,15 +44,15 @@ void _sealock_update_current_row(sealock_state_t *lock, time_t time) {
   lock->current_row = row ? row - 1 : 0;
 }
 
-int _sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t time) {
-  _sealock_update_current_row(lock, time);
+static int sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t time) {
+  sealock_update_current_row(lock, time);
   return get_csv_row_data(&lock->timeseries_data, lock->current_row, &lock->parameters) == CSV_OK
              ? SEALOCK_OK
              : SEALOCK_ERROR;
 }
 
-int _sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t time) {
-  _sealock_update_current_row(lock, time);
+static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t time) {
+  sealock_update_current_row(lock, time);
   // TODO: implement me: See UNST-7866.
   return SEALOCK_OK;
 }
@@ -62,10 +62,10 @@ int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time) {
 
   switch (lock->computation_mode) {
   case cycle_average_mode:
-    status = _sealock_update_cycle_average_parameters(lock, time);
+    status = sealock_update_cycle_average_parameters(lock, time);
     break;
   case phase_wise_mode:
-    status = _sealock_update_phase_wise_parameters(lock, time);
+    status = sealock_update_phase_wise_parameters(lock, time);
     break;
   default:
     status = SEALOCK_ERROR; // Should never happen.
