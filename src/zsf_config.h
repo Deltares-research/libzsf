@@ -1,8 +1,6 @@
 
-#pragma once
-
-#ifndef ZSF_CONFIG_H
-#  define ZSF_CONFIG_H
+#ifndef ZSF_CONFIG_H_
+#  define ZSF_CONFIG_H_
 
 #  ifdef __cplusplus
 extern "C" {
@@ -27,4 +25,4 @@ void zsf_config_unload(zsf_config_t *config_ptr);
 }
 #  endif
 
-#endif // ZSF_CONFIG_H
+#endif // ZSF_CONFIG_H_
