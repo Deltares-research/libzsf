@@ -42,8 +42,11 @@ static void test_integrate_constant_profile(void) {
   const double constant_value = 1.0;
   const double lower_bound = 0.3;
   const double upper_bound = 0.7;
+  const int number_of_positions = 2;
   profile constant_profile = profile_default;
-  TEST_ASSERT_EQUAL(create_linear_profile(&constant_profile, 2, constant_value, constant_value), 0);
+  TEST_ASSERT_EQUAL(
+      create_linear_profile(&constant_profile, number_of_positions, constant_value, constant_value),
+      0);
 
   const double result =
       integrate_piecewise_linear_profile(&constant_profile, lower_bound, upper_bound);
@@ -58,8 +61,11 @@ static void test_integrate_to_edges(void) {
   const double constant_value = 0.618;
   const double lower_bound = 0.0;
   const double upper_bound = 1.0;
+  const int number_of_positions = 2;
   profile constant_profile = profile_default;
-  TEST_ASSERT_EQUAL(create_linear_profile(&constant_profile, 2, constant_value, constant_value), 0);
+  TEST_ASSERT_EQUAL(
+      create_linear_profile(&constant_profile, number_of_positions, constant_value, constant_value),
+      0);
 
   const double result =
       integrate_piecewise_linear_profile(&constant_profile, lower_bound, upper_bound);
@@ -75,8 +81,10 @@ static void test_integrate_linear_profile(void) {
   const double upper_bound = 0.81;
   const double left_value = 0.1;
   const double right_value = 4.33;
+  const int number_of_positions = 6;
   profile linear_profile = profile_default;
-  TEST_ASSERT_EQUAL(create_linear_profile(&linear_profile, 6, left_value, right_value), 0);
+  TEST_ASSERT_EQUAL(
+      create_linear_profile(&linear_profile, number_of_positions, left_value, right_value), 0);
 
   const double result =
       integrate_piecewise_linear_profile(&linear_profile, lower_bound, upper_bound);
@@ -106,7 +114,7 @@ static void test_distribute_over_two_layers(void) {
   TEST_ASSERT_EQUAL(
       distribute_discharge_over_layers(total_discharge, &linear_profile, &two_layers, &result), 0);
 
-  TEST_ASSERT_EQUAL(result.number_of_layers, 2);
+  TEST_ASSERT_EQUAL(result.number_of_layers, two_layers.number_of_layers);
   const double expected_first_discharge =
       total_discharge * pow(two_layers.normalized_target_volumes[0], 2.0);
   const double expected_second_discharge = total_discharge - expected_first_discharge;
