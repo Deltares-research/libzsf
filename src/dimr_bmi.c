@@ -90,7 +90,7 @@ inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **q
   *quantity_ptr = NULL;
 
   if (key == NULL || *key == '\0') {
-    return 0; // Fail on empty strings.
+    return DIMR_BMI_FAILURE; // Fail on empty strings.
   }
 
   token = strtok(key, zsf_key_separator);
@@ -100,7 +100,7 @@ inline int parse_key(char *key, char **vartype_ptr, char **lock_id_ptr, char **q
     *quantity_ptr = token;
     token = strtok(NULL, zsf_key_separator);
   }
-  return 1;
+  return DIMR_BMI_OK;
 }
 
 // Copy key into buffer
@@ -127,7 +127,7 @@ int set_var(const char *key, void *src_ptr) {
 #endif
 
   copy_key(key, keystr);
-  if (!parse_key(keystr, &vartype, &lock_id, &quantity)) {
+  if (parse_key(keystr, &vartype, &lock_id, &quantity) != DIMR_BMI_OK) {
     return DIMR_BMI_FAILURE;
   }
 
@@ -180,7 +180,7 @@ int get_var(const char *key, void **dst_ptr) {
 #endif
 
   copy_key(key, keystr);
-  if (!parse_key(keystr, &vartype, &lock_id, &quantity)) {
+  if (parse_key(keystr, &vartype, &lock_id, &quantity) != DIMR_BMI_OK) {
     return DIMR_BMI_FAILURE;
   }
 
