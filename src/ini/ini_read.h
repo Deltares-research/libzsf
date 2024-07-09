@@ -19,9 +19,9 @@ typedef int (*ini_callback)(char *section, char *key, char *value, void *data_pt
  * pointed to by data_ptr in a meaningful way. the callback function
  * should return INI_FAIL if there was a fatal problem, or INI_OK otherwise.
  *
- * Note: The callback function is also called when a new section header is
- *       encountered with an empty key and value to allow for handling settings
- *       specified in seperate blocks.
+ * Note: The callback function is also called with an empty key and value when
+ *       a new section header is encountered, such that the callback can handle
+ *       settings specified in seperate blocks.
  *
  * Returns: 0  if all was ok.
  *          -1 if there was a file i/o problem (file not found or read error).

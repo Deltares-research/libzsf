@@ -20,7 +20,7 @@ typedef struct zsf_config_struct {
 
 int zsf_config_load(zsf_config_t *config_ptr, const char *filepath);
 void zsf_config_unload(zsf_config_t *config_ptr);
-sealock_index_t zsf_config_get_lock_index(zsf_config_t *config_ptr, char *lock_id);
+sealock_index_t zsf_config_get_lock_index(const zsf_config_t *config_ptr, const char *lock_id);
 
 #  ifdef __cplusplus
 }

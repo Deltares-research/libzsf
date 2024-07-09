@@ -21,10 +21,12 @@ int _zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
   errno = 0;
   if (!strcmp(section, "sealock")) {
     sealock_index_t lock_index = config_ptr->num_locks - 1;
-    assert(!*key || (*key && lock_index >= 0));
+    assert(!*key || lock_index >= 0);
     if (!*key) {
       if (config_ptr->num_locks < ZSF_MAX_LOCKS) {
         config_ptr->num_locks++;
+      } else {
+        return INI_FAIL;
       }
     } else if (!strcmp(key, "id")) {
       config_ptr->locks[lock_index].id = strdup(value);
@@ -95,7 +97,7 @@ void zsf_config_unload(zsf_config_t *config_ptr) {
 
 // Find sealock in config by id.
 // Returns -1 if not found.
-sealock_index_t zsf_config_get_lock_index(zsf_config_t *config_ptr, char *lock_id) {
+sealock_index_t zsf_config_get_lock_index(const zsf_config_t *config_ptr, const char *lock_id) {
   for (sealock_index_t index = 0; index < config_ptr->num_locks; index++) {
     if (!strcmp(lock_id, config_ptr->locks[index].id)) {
       return index;
