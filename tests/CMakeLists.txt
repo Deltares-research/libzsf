@@ -20,4 +20,4 @@ add_test(test_io_layer_distribution test_io_layer_distribution)
 
 add_executable(test_load_csv test_load_csv.c)
 target_link_libraries(test_load_csv PRIVATE test_dependencies)
-add_test(test_load_csv test_load_csv)
+add_test(NAME test_load_csv COMMAND test_load_csv WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
