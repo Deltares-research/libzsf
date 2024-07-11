@@ -91,7 +91,7 @@ static csv_value_t field_to_value(csv_type_t field_type, char *field_str, size_t
     value.data.uint_value = (unsigned int)strtol(field_str, &endptr, 0);
     break;
   case long_type:
-    value.data.long_value = strtol(field_str, &endptr, 0);
+    value.data.long_value = strtoll(field_str, &endptr, 0);
     break;
   case float_type:
     value.data.float_value = strtof(field_str, &endptr);
@@ -377,7 +377,7 @@ static int get_array(csv_context_t *context, csv_type_t type, size_t column_inde
       ((unsigned int *)array_ptr)[row_index] = value.data.uint_value;
       break;
     case long_type:
-      ((long *)array_ptr)[row_index] = value.data.long_value;
+      ((int64_t *)array_ptr)[row_index] = value.data.long_value;
       break;
     case float_type:
       ((float *)array_ptr)[row_index] = value.data.float_value;

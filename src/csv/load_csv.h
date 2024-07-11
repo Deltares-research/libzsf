@@ -5,6 +5,7 @@
 #ifndef CSV_H
 #  define CSV_H
 
+#  include <stdint.h>
 #  include <stddef.h>
 
 #  define CSV_OK (0)
@@ -36,7 +37,7 @@ typedef struct s_csv_value {
   union {
     int int_value;
     unsigned int uint_value;
-    long long_value;
+    int64_t long_value;
     float float_value;
     double double_value;
     char *string_value;
@@ -67,6 +68,11 @@ typedef struct s_csv_context {
   size_t num_rows;                               // Number of rows currently read from CSV.
   size_t num_columns;                            // Number of columns read from CSV (headers).
 } csv_context_t;
+
+#  define CSV_CONTEXT()                                                                            \
+    (csv_context_t) {                                                                              \
+      .filepath = NULL, .num_column_defs = 0, .row_cap = 0, .num_rows = 0, .num_columns = 0       \
+    }
 
 int def_csv_column(csv_context_t *context, char *label, csv_type_t value_type, csv_setter_t setter);
 int load_csv(csv_context_t *context, char *filepath);
