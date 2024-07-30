@@ -12,11 +12,11 @@ set_target_properties(test_dependencies PROPERTIES C_STANDARD 23)
 # Test executables and add them to CTest
 add_executable(test_dimr_bmi test_dimr_bmi.c)
 target_link_libraries(test_dimr_bmi PRIVATE test_dependencies)
-add_test(test_dimr_bmi test_dimr_bmi)
+add_test(NAME test_dimr_bmi COMMAND test_dimr_bmi)
 
 add_executable(test_io_layer_distribution test_io_layer_distribution.c)
 target_link_libraries(test_io_layer_distribution PRIVATE test_dependencies)
-add_test(test_io_layer_distribution test_io_layer_distribution)
+add_test(NAME test_io_layer_distribution COMMAND test_io_layer_distribution)
 
 add_executable(test_load_csv test_load_csv.c)
 target_link_libraries(test_load_csv PRIVATE test_dependencies)
