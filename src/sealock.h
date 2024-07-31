@@ -33,6 +33,10 @@ typedef struct sealock_state_struct {
   size_t current_row;
   time_t *times;
   size_t times_len;
+  struct {
+    int length;
+    double *values;
+  } flow_profile;
 } sealock_state_t;
 
 int sealock_load_timeseries(sealock_state_t *lock, char *filepath);
