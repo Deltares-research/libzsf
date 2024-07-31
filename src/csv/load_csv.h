@@ -69,11 +69,8 @@ typedef struct s_csv_context {
   size_t num_columns;                            // Number of columns read from CSV (headers).
 } csv_context_t;
 
-#  define CSV_CONTEXT()                                                                            \
-    (csv_context_t) {                                                                              \
-      .filepath = NULL, .num_column_defs = 0, .row_cap = 0, .num_rows = 0, .num_columns = 0       \
-    }
 
+int init_csv_context(csv_context_t *context);
 int def_csv_column(csv_context_t *context, char *label, csv_type_t value_type, csv_setter_t setter);
 int load_csv(csv_context_t *context, char *filepath);
 int unload_csv(csv_context_t *context);

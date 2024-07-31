@@ -255,6 +255,20 @@ static int parse_line(csv_context_t *context, char *line) {
 // Dummy setter function.
 int set_dummy(void *ptr, csv_value_t value) { return CSV_OK; }
 
+// Get a sane, empty, csv_context.
+int init_csv_context(csv_context_t* context) {
+  assert(context);
+
+  context->rows = NULL;
+  context->num_rows = 0;
+  context->row_cap = 0;
+  context->filepath = NULL;
+  context->num_columns = 0;
+  context->num_column_defs = 0;
+
+  return CSV_OK;
+}
+
 // Define csv column header, value type and setter function in the supplied context.
 // NOTE: This function must be called for each header and before calling load_csv()!
 // Returns CSV_OK on success. CSV_ERROR if the maximum number of columns defined in CSV_MAX_COLUMNS was exceeded.
@@ -310,6 +324,7 @@ int unload_csv(csv_context_t *context) {
     }
     free(context->rows);
   }
+
   context->rows = NULL;
   context->num_rows = 0;
   context->row_cap = 0;
