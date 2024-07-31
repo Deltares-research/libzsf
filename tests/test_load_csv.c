@@ -18,11 +18,14 @@ static CSV_STRING_SETTER(t_data, label);
 static CSV_DOUBLE_SETTER(t_data, value);
 
 static void test_read_csv() {
-  csv_context_t ctx = CSV_CONTEXT();
+  csv_context_t ctx;
   t_data test_data;
   int64_t data_array[4];
   int status = CSV_OK;
 
+  /* initialize context */
+  status = init_csv_context(&ctx);
+  TEST_ASSERT_MESSAGE(status == CSV_OK, "Failed to initialize csv context.");
   /* set up expected columns */
   status = def_csv_column(&ctx, "time", long_type, set_time);
   TEST_ASSERT_MESSAGE(status == CSV_OK, "Failed to define time column.");

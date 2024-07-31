@@ -23,7 +23,7 @@ int set_flushing_discharge(void *ptr, csv_value_t value) {
 
 // Load time averaged data from csv.
 int load_time_averaged_timeseries(csv_context_t *context, char *filepath) {
-  int status = CSV_OK;
+  int status = init_csv_context(context);
 
   // Set up columns
   status = status || def_csv_column(context, "time", double_type, set_dummy);
