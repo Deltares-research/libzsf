@@ -5,53 +5,18 @@
 #include "timestamp.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Parse a comma separated list of doubles in value string.
-// Returns number of elements found in the list or 0 on error.
-// If array_ptr is not NULL, the array will be filled with converted double values.
-// NOTE: The caller is responsible for deallocating the array.
-static int parse_double_list(char* value, double** array_ptr) {
-  int num_items = 0;
-  double *array = NULL;
-  char *tempstr = strdup(value);
-  char *token;
-
-  token = strtok(tempstr, ",");
-  while (token) {
-    num_items++;
-    token = strtok(NULL, ",");
-  }
-  free(tempstr);
-
-  if (num_items && array_ptr != NULL) {
-    array = malloc(num_items * sizeof(double));
-    if (array) {
-      token = strtok(value, ",");
-      for (int i = 0; i < num_items && token; i++) {
-        array[i] = strtod(token, NULL);
-        token = strtok(NULL, ",");
-      }
-    }
-    *array_ptr = array;
-  }
-
-  return num_items;
-}
-
-
 static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr) {
   zsf_config_t *config_ptr = (zsf_config_t *)data_ptr;
-  char *end_ptr = NULL;
+  int status = INI_OK;
 
   assert(section);
   assert(key);
   assert(value);
   assert(data_ptr);
 
-  errno = 0;
   if (!strcmp(section, "sealock")) {
     sealock_index_t lock_index = config_ptr->num_locks - 1;
     assert(!*key || lock_index >= 0);
@@ -74,46 +39,54 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
     } else if (!strcmp(key, "sealock_operational_parameters")) {
       config_ptr->locks[lock_index].operational_parameters_file = strdup(value);
     } else if (!strcmp(key, "initial_head_lock")) {
-      config_ptr->locks[lock_index].phase_state.head_lock = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].phase_state.head_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_salinity_lock")) {
-      config_ptr->locks[lock_index].phase_state.salinity_lock = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].phase_state.salinity_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_saltmass_lock")) {
-      config_ptr->locks[lock_index].phase_state.saltmass_lock = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].phase_state.saltmass_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_temperature_lock")) {
       // TODO: Add temperature to lock?
     } else if (!strcmp(key, "initial_volume_ship_in_lock")) {
-      config_ptr->locks[lock_index].phase_state.volume_ship_in_lock = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].phase_state.volume_ship_in_lock =
+          ini_parse_double(value, &status);
     } else if (!strcmp(key, "lock_length")) {
-      config_ptr->locks[lock_index].parameters.lock_length = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].parameters.lock_length = ini_parse_double(value, &status);
     } else if (!strcmp(key, "lock_width")) {
-      config_ptr->locks[lock_index].parameters.lock_width = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].parameters.lock_width = ini_parse_double(value, &status);
     } else if (!strcmp(key, "lock_bottom")) {
-      config_ptr->locks[lock_index].parameters.lock_bottom = strtod(value, &end_ptr);
+      config_ptr->locks[lock_index].parameters.lock_bottom = ini_parse_double(value, &status);
     } else if (!strcmp(key, "flow_profile")) {
-      int length = 0;
-      double *values = NULL;
-      length = parse_double_list(value, &values);
-      if (length) {
-        config_ptr->locks[lock_index].flow_profile.length = length;
-        config_ptr->locks[lock_index].flow_profile.values = values;
+      int array_length = 0;
+      double *value_array = ini_parse_double_list(value, &array_length, &status);
+      if (array_length && value_array && status == INI_OK) {
+        config_ptr->locks[lock_index].flow_profile.length = array_length;
+        config_ptr->locks[lock_index].flow_profile.values = value_array;
       } else {
-        return INI_FAIL;
+        free(value_array);
+        status = INI_FAIL;
       }
     }
   } else if (!strcmp(section, "general") || !*section) {
+    char *end_ptr = NULL;
     if (!strcmp(key, "start_time")) {
-      config_ptr->start_time = timestamp_string_to_time(value, &end_ptr);
-      config_ptr->current_time = config_ptr->start_time;
+      time_t start_time = timestamp_string_to_time(value, &end_ptr);
+      if (start_time >= 0) {
+        config_ptr->start_time = start_time;
+        config_ptr->current_time = config_ptr->start_time;
+      } else {
+        status = INI_FAIL;
+      }
     } else if (!strcmp(key, "end_time")) {
-      config_ptr->end_time = timestamp_string_to_time(value, &end_ptr);
+      time_t end_time = timestamp_string_to_time(value, &end_ptr);
+      if (end_time >= 0) {
+        config_ptr->end_time = end_time;
+      } else {
+        status = INI_FAIL;
+      }
     }
   }
 
-  if (errno || end_ptr == value || (end_ptr && *end_ptr)) {
-    return INI_FAIL;
-  }
-
-  return INI_OK;
+  return status;
 }
 
 int zsf_config_load(zsf_config_t *config_ptr, const char *filepath) {
