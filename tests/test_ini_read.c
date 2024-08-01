@@ -71,6 +71,22 @@ static void test_ini_parse_int() {
   ival = ini_parse_int("42", &status);
   TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to int failed.");
   TEST_ASSERT_INT_WITHIN(0, 42, ival);
+ 
+  // Attempting to convert non-number should fail.
+  ival = ini_parse_int("text", &status);
+  TEST_ASSERT(status == INI_FAIL);
+
+  // Attempting to convert a float should fail.
+  ival = ini_parse_int("1.23", &status);
+  TEST_ASSERT(status == INI_FAIL);
+
+  // Attempting to convert a string with trailing text should fail.
+  ival = ini_parse_int("1234 trailing text", &status);
+  TEST_ASSERT(status == INI_FAIL);
+
+  // Attempting to convert a string with leading and trailing whitespace should work.
+  ival = ini_parse_int("   1234    ", &status);
+  TEST_ASSERT(status == INI_OK);
 }
 
 static void test_ini_parse_double() {
@@ -84,6 +100,23 @@ static void test_ini_parse_double() {
   dval = ini_parse_double("-567.8", &status);
   TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double failed.");
   TEST_ASSERT_DOUBLE_WITHIN(0.05, -567.8, dval);
+
+  // Attempting to convert an integer should work.
+  dval = ini_parse_double("14159", &status);
+  TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double failed.");
+  TEST_ASSERT_DOUBLE_WITHIN(0.5, 14159, dval);
+
+  // Attempting to convert non-number should fail.
+  dval = ini_parse_double("text", &status);
+  TEST_ASSERT(status == INI_FAIL);
+
+  // Attempting to convert a string with trailing text should fail.
+  dval = ini_parse_double("12.34 trailing text", &status);
+  TEST_ASSERT(status == INI_FAIL);
+
+  // Attempting to convert a string with leading and trailing whitespace should work.
+  dval = ini_parse_double("  1.234   ", &status);
+  TEST_ASSERT(status == INI_OK);
 }
 
 static void test_ini_parse_double_list() {
@@ -93,6 +126,29 @@ static void test_ini_parse_double_list() {
   TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double list failed.");
   TEST_ASSERT(array != NULL);
   TEST_ASSERT(length == 6);
+  free(array);
+
+  // a 'list' with a single value with should work.
+  length = 0;
+  array = ini_parse_double_list("999", &length, &status);
+  TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double list failed.");
+  TEST_ASSERT(array != NULL);
+  TEST_ASSERT(length == 1);
+  free(array);
+
+  // an empty list should fail.
+  length = 0;
+  array = ini_parse_double_list("", &length, &status);
+  TEST_ASSERT(status == INI_FAIL);
+  TEST_ASSERT(array == NULL);
+  TEST_ASSERT(length == 0);
+
+  // a list where one or more item is not a double should fail.
+  length = 0;
+  array = ini_parse_double_list("1,2,text,10x,5", &length, &status);
+  TEST_ASSERT(status == INI_FAIL);
+  TEST_ASSERT(array == NULL);
+  TEST_ASSERT(length == 0);
 }
 
 int main(void) {
