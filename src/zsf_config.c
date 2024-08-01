@@ -58,7 +58,7 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
     } else if (!strcmp(key, "flow_profile")) {
       int array_length = 0;
       double *value_array = ini_parse_double_list(value, &array_length, &status);
-      if (array_length && value_array && status == INI_OK) {
+      if (status == INI_OK) {
         config_ptr->locks[lock_index].flow_profile.length = array_length;
         config_ptr->locks[lock_index].flow_profile.values = value_array;
       } else {
