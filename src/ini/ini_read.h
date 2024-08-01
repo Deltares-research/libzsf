@@ -29,6 +29,17 @@ typedef int (*ini_callback)(char *section, char *key, char *value, void *data_pt
  */
 int ini_read(const char *filepath, ini_callback callback, void *data_ptr);
 
+/* Helper functions for handling values within the callback function.
+ * Returns: converted value, success INI_OK was written to the supplied
+ *          status pointer. On failure, INI_FAIL was written instead and
+ *          the return value should be zero or NULL, but don't rely on it.
+ * NOTE: The caller is responsible for deallocating the array returned from
+ *       ini_parse_double_list.
+ */
+int ini_parse_int(const char *value, int *status_ptr);
+double ini_parse_double(const char *value, int *status_ptr);
+double *ini_parse_double_list(const char *value, int *length_ptr, int *status_ptr);
+
 #  ifdef __cplusplus
 }
 #  endif
