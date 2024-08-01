@@ -64,10 +64,44 @@ static void test_ini_read() {
   TEST_ASSERT_MESSAGE(status == INI_OK, "Failed to load INI file.");
 }
 
+static void test_ini_parse_int() {
+  int status = INI_OK;
+  int ival = 0;
+
+  ival = ini_parse_int("42", &status);
+  TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to int failed.");
+  TEST_ASSERT_INT_WITHIN(0, 42, ival);
+}
+
+static void test_ini_parse_double() {
+  int status = INI_OK;
+  double dval = 0.0;
+
+  dval = ini_parse_double("123.4", &status);
+  TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double failed.");
+  TEST_ASSERT_DOUBLE_WITHIN(0.05, 123.4, dval);
+
+  dval = ini_parse_double("-567.8", &status);
+  TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double failed.");
+  TEST_ASSERT_DOUBLE_WITHIN(0.05, -567.8, dval);
+}
+
+static void test_ini_parse_double_list() {
+  int status = INI_OK;
+  int length = 0;
+  double *array = ini_parse_double_list("1,1,2,3.8, 5 ,8", &length, &status);
+  TEST_ASSERT_MESSAGE(status == INI_OK, "Conversion to double list failed.");
+  TEST_ASSERT(array != NULL);
+  TEST_ASSERT(length == 6);
+}
+
 int main(void) {
   UNITY_BEGIN();
 
   RUN_TEST(test_ini_read);
+  RUN_TEST(test_ini_parse_int);
+  RUN_TEST(test_ini_parse_double);
+  RUN_TEST(test_ini_parse_double_list);
 
   return UNITY_END();
 }
