@@ -41,6 +41,8 @@ static int my_ini_handler(char *section, char *key, char *value, void *data_ptr)
       TEST_ASSERT_EQUAL_STRING("234.5", value);
     } else if (!strcmp(key, "attribute")) {
       TEST_ASSERT_EQUAL_STRING("42", value);
+    } else if (!strcmp(key, "list_variable")) {
+      TEST_ASSERT_EQUAL_STRING("1, 1, 2, 3, 5, 8", value);
     } else if (!strcmp(key, "#disabled")) {
       TEST_FAIL_MESSAGE("Trying to set disabled key.");
     } else if (!strcmp(key, ";disabled")) {
