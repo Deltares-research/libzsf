@@ -21,3 +21,7 @@ add_test(NAME test_io_layer_distribution COMMAND test_io_layer_distribution)
 add_executable(test_load_csv test_load_csv.c)
 target_link_libraries(test_load_csv PRIVATE test_dependencies)
 add_test(NAME test_load_csv COMMAND test_load_csv WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(test_ini_read test_ini_read.c)
+target_link_libraries(test_ini_read PRIVATE test_dependencies)
+add_test(NAME test_ini_read COMMAND test_ini_read WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
