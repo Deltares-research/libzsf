@@ -7,7 +7,7 @@ extern "C" {
 
 #include <stdlib.h>
 
-static const struct profile_T {
+static const struct profile_struct {
   int number_of_positions; // Number of elements in each following array
   double *
       relative_z_position; // Relative positions in the z-direction for which profile is provided (0 = bed level, 1 = water level)
@@ -16,35 +16,35 @@ static const struct profile_T {
 } profile_default = {
     .number_of_positions = 0, .relative_z_position = NULL, .relative_discharge_from_lock = NULL};
 
-typedef struct profile_T profile;
+typedef struct profile_struct profile_t;
 
-void cleanup_profile(profile *profile);
+void cleanup_profile(profile_t *profile);
 
-static const struct layers_T {
+static const struct layers_struct {
   int number_of_layers;
   double *
       normalized_target_volumes; // Percentage of water volume per layer, discharge will be transferred proportionally
 } layers_default = {.number_of_layers = 0, .normalized_target_volumes = NULL};
 
-typedef struct layers_T layers;
+typedef struct layers_struct layers_t;
 
-void cleanup_layers(layers *layers);
+void cleanup_layers(layers_t *layers);
 
-static const struct layered_discharge_T {
+static const struct layered_discharge_struct {
   int number_of_layers;
   double *discharge_per_layer;
 } layered_discharge_default = {.number_of_layers = 0, .discharge_per_layer = NULL};
 
-typedef struct layered_discharge_T layered_discharge;
+typedef struct layered_discharge_struct layered_discharge_t;
 
-void cleanup_layered_discharge(layered_discharge *layered_discharge);
+void cleanup_layered_discharge(layered_discharge_t *layered_discharge);
 
-double integrate_piecewise_linear_profile(const profile *profile, const double lower_bound,
+double integrate_piecewise_linear_profile(const profile_t *profile, const double lower_bound,
                                           const double upper_bound);
 
-int distribute_discharge_over_layers(double total_discharge, const profile *profile,
-                                     const layers *layers,
-                                     layered_discharge *layered_discharge_result);
+int distribute_discharge_over_layers(double total_discharge, const profile_t *profile,
+                                     const layers_t *layers,
+                                     layered_discharge_t *layered_discharge_result);
 #ifdef __cplusplus
 }
 #endif

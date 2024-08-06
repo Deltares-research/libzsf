@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-void cleanup_profile(profile *profile) {
+void cleanup_profile(profile_t *profile) {
   if (profile == NULL) {
     return;
   }
@@ -12,14 +12,14 @@ void cleanup_profile(profile *profile) {
   free(profile->relative_discharge_from_lock);
 }
 
-void cleanup_layers(layers *layers) {
+void cleanup_layers(layers_t *layers) {
   if (layers == NULL) {
     return;
   }
   free(layers->normalized_target_volumes);
 }
 
-void cleanup_layered_discharge(layered_discharge *layered_discharge) {
+void cleanup_layered_discharge(layered_discharge_t *layered_discharge) {
   if (layered_discharge == NULL) {
     return;
   }
@@ -28,7 +28,7 @@ void cleanup_layered_discharge(layered_discharge *layered_discharge) {
 
 // Integrate relative_discharge_from_lock(x) with x from 0 to 1, assuming that relative_z_position[0] == 0 and relative_z_position[number_of_positions - 1] == 1.
 // Further, the profile is assumed to be piecewise linear, and is a linear interpolation between the given relative_z_positions.
-double integrate_piecewise_linear_profile(const profile *profile, const double lower_bound,
+double integrate_piecewise_linear_profile(const profile_t *profile, const double lower_bound,
                                           const double upper_bound) {
   assert(0.0 <= lower_bound && lower_bound <= upper_bound && upper_bound <= 1.0);
   assert(profile->number_of_positions >= 2); // 0 and 1 have to be in
@@ -77,9 +77,9 @@ double integrate_piecewise_linear_profile(const profile *profile, const double l
 
 // Distribute the total_discharge over layers.
 // The discharge that each layer receives is given by a relative profile
-int distribute_discharge_over_layers(double total_discharge, const profile *profile,
-                                     const layers *layers,
-                                     layered_discharge *layered_discharge_result) {
+int distribute_discharge_over_layers(double total_discharge, const profile_t *profile,
+                                     const layers_t *layers,
+                                     layered_discharge_t *layered_discharge_result) {
   assert(layered_discharge_result != NULL);
   assert(layered_discharge_result->discharge_per_layer == NULL);
   assert(profile->relative_z_position != NULL);

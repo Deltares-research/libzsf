@@ -9,7 +9,7 @@ void tearDown(void) {}
 
 // Create a linear profile starting with discharge_0 at z = 0 and discharge_1 at z = 1.
 // Use number_of_positions nodes in the piecewise linear profile.
-static int create_linear_profile(profile *profile, const int number_of_positions,
+static int create_linear_profile(profile_t *profile, const int number_of_positions,
                                  const double discharge_0, const double discharge_1) {
   profile->number_of_positions = number_of_positions;
   profile->relative_z_position = malloc(number_of_positions * sizeof(double));
@@ -43,7 +43,7 @@ static void test_integrate_constant_profile(void) {
   const double lower_bound = 0.3;
   const double upper_bound = 0.7;
   const int number_of_positions = 2;
-  profile constant_profile = profile_default;
+  profile_t constant_profile = profile_default;
   TEST_ASSERT_EQUAL(
       create_linear_profile(&constant_profile, number_of_positions, constant_value, constant_value),
       0);
@@ -62,7 +62,7 @@ static void test_integrate_to_edges(void) {
   const double lower_bound = 0.0;
   const double upper_bound = 1.0;
   const int number_of_positions = 2;
-  profile constant_profile = profile_default;
+  profile_t constant_profile = profile_default;
   TEST_ASSERT_EQUAL(
       create_linear_profile(&constant_profile, number_of_positions, constant_value, constant_value),
       0);
@@ -82,7 +82,7 @@ static void test_integrate_linear_profile(void) {
   const double left_value = 0.1;
   const double right_value = 4.33;
   const int number_of_positions = 6;
-  profile linear_profile = profile_default;
+  profile_t linear_profile = profile_default;
   TEST_ASSERT_EQUAL(
       create_linear_profile(&linear_profile, number_of_positions, left_value, right_value), 0);
 
@@ -98,11 +98,11 @@ static void test_distribute_over_two_layers(void) {
   // Create a normalized profile, so that calculating the expected outcome is simpler
   const double left_profile_value = 0.0;
   const double right_profile_value = 2.0;
-  profile linear_profile = profile_default;
+  profile_t linear_profile = profile_default;
   TEST_ASSERT_EQUAL(
       create_linear_profile(&linear_profile, 10, left_profile_value, right_profile_value), 0);
 
-  layers two_layers = layers_default;
+  layers_t two_layers = layers_default;
   two_layers.number_of_layers = 2;
   two_layers.normalized_target_volumes = malloc(sizeof(double) * two_layers.number_of_layers);
   TEST_ASSERT_NOT_EQUAL(two_layers.normalized_target_volumes, NULL);
@@ -110,7 +110,7 @@ static void test_distribute_over_two_layers(void) {
   two_layers.normalized_target_volumes[1] = 0.7;
 
   const double total_discharge = 95.13;
-  layered_discharge result = layered_discharge_default;
+  layered_discharge_t result = layered_discharge_default;
   TEST_ASSERT_EQUAL(
       distribute_discharge_over_layers(total_discharge, &linear_profile, &two_layers, &result), 0);
 
