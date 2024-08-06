@@ -80,6 +80,9 @@ int sealock_update(sealock_state_t *lock, time_t time) {
     switch (lock->computation_mode) {
     case cycle_average_mode:
       status = zsf_calc_steady(&lock->parameters, &lock->results, NULL);
+      // Adjust result value signs to align with D-Flow FM conventions.
+      lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
+      lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
       break;
     case phase_wise_mode:
       // TODO: Implement me: See UNST-7866.
