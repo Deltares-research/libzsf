@@ -5,6 +5,7 @@
 
 #include "csv/load_csv.h"
 #include "zsf.h"
+#include "io_layer_distribution.h"
 #include <time.h>
 
 #define SEALOCK_OK (0)
@@ -52,10 +53,7 @@ typedef struct sealock_state_struct {
   size_t current_row;
   time_t *times;
   size_t times_len;
-  struct {
-    int length;
-    double *values;
-  } flow_profile;
+  profile_t flow_profile;
 } sealock_state_t;
 
 
