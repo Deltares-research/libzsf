@@ -59,9 +59,11 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
     } else if (!strcmp(key, "flow_profile")) {
       int array_length = 0;
       double *value_array = ini_parse_double_list(value, &array_length, &status);
-      if (status == INI_OK) {
-        config_ptr->locks[lock_index].flow_profile.length = array_length;
-        config_ptr->locks[lock_index].flow_profile.values = value_array;
+      double *linear_z_positions = io_layer_linear_z_positions(array_length);
+      if (status == INI_OK && linear_z_positions) {
+        config_ptr->locks[lock_index].flow_profile.number_of_positions = array_length;
+        config_ptr->locks[lock_index].flow_profile.relative_discharge_from_lock = value_array;
+        config_ptr->locks[lock_index].flow_profile.relative_z_position = linear_z_positions;
       } else {
         free(value_array);
         status = INI_FAIL;

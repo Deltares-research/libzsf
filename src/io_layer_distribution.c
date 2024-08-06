@@ -26,6 +26,24 @@ void cleanup_layered_discharge(layered_discharge_t *layered_discharge) {
   free(layered_discharge->discharge_per_layer);
 }
 
+// Generate a default array linear z positions for supplied number_of_layers.
+// Returns pointer to allocated array of doubles.
+// Note: Caller is responsible to deallocating the created array.
+double* io_layer_linear_z_positions(const int number_of_layers) {
+  double *linear_z_positions = NULL;
+  if (number_of_layers > 0) {
+    linear_z_positions = calloc(number_of_layers, sizeof(double));
+    if (linear_z_positions) {
+      double z_step = 1.0 / (number_of_layers - 1.0);
+      for (int i = 0; i < number_of_layers; i++) {
+        linear_z_positions[i] = z_step * i;
+      }
+    }
+  }
+  return linear_z_positions;
+}
+
+
 // Integrate relative_discharge_from_lock(x) with x from 0 to 1, assuming that relative_z_position[0] == 0 and relative_z_position[number_of_positions - 1] == 1.
 // Further, the profile is assumed to be piecewise linear, and is a linear interpolation between the given relative_z_positions.
 double integrate_piecewise_linear_profile(const profile_t *profile, const double lower_bound,
