@@ -37,6 +37,36 @@ typedef struct zsf_phase_wise_args_struct {
     .t_flushing = 0                                                                                \
   }
 
+#define MAX_NUM_VOLUMES 50
+
+typedef struct dfm_lake_3d_struct {
+  // input from fdm
+  double volumes[MAX_NUM_VOLUMES];
+  // determined from volumes
+  unsigned num_active_cells;
+  unsigned first_active_cell;
+  // determined from results
+  double mass_transport_lake[MAX_NUM_VOLUMES];
+  double salt_load_lake[MAX_NUM_VOLUMES];
+  double discharge_from_lake[MAX_NUM_VOLUMES];
+  double discharge_to_lake[MAX_NUM_VOLUMES];
+  double salinity_to_lake[MAX_NUM_VOLUMES];
+} dfm_lake_3d_t;
+
+typedef struct dfm_sea_3d_struct {
+  // input from fdm
+  double volumes[MAX_NUM_VOLUMES];
+  // determined from volumes
+  unsigned num_active_cells;
+  unsigned first_active_cell;
+  // determined from results
+  double mass_transport_sea[MAX_NUM_VOLUMES];
+  double salt_load_sea[MAX_NUM_VOLUMES];
+  double discharge_from_sea[MAX_NUM_VOLUMES];
+  double discharge_to_sea[MAX_NUM_VOLUMES];
+  double salinity_to_sea[MAX_NUM_VOLUMES];
+} dfm_sea_3d_t;
+
 typedef struct sealock_state_struct {
   char *id;
   // ZSF
@@ -54,6 +84,8 @@ typedef struct sealock_state_struct {
   time_t *times;
   size_t times_len;
   profile_t flow_profile;
+  dfm_lake_3d_t lake_3d;
+  dfm_sea_3d_t sea_3d;
 } sealock_state_t;
 
 
