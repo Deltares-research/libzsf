@@ -104,6 +104,7 @@ static int sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t
 static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
 
+  sealock_collect_layers(lock);
   status = zsf_calc_steady(&lock->parameters, &lock->results, NULL);
   // Adjust result value signs to align with D-Flow FM conventions.
   if (status == SEALOCK_OK) {
@@ -207,85 +208,132 @@ int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time) {
   return status;
 }
 
+static void sealock_get_active_cells(dfm_volumes_t* volumes) {
+  // Determine amount of active volumes.
+  unsigned amount = 0;
+  unsigned first = 0;
+  unsigned last = MAX_NUM_VOLUMES-1;
+  for (unsigned i = 0; i < MAX_NUM_VOLUMES; i++) {
+    if (volumes->volumes[i] > 0) {
+      first = i;
+      break;
+    }
+  }
+  for (unsigned i = MAX_NUM_VOLUMES; i > 0; --i) {
+    if (volumes->volumes[i] > 0) {
+      last = i;
+      break;
+    }
+  }
+  if (last > first) {
+    amount = last - first;
+  }
+  volumes->num_active_cells = amount;
+  volumes->first_active_cell = first;
+}
+
 // Determine the number and start of active layers.
 // Underlying assumption is that the volumes have one
 // contiguous run of non-zero cells.
-void sealock_get_active_layers(sealock_state_t* lock) {
-  // Determine amount of active volumes.
-  unsigned sea_num = 0, lake_num = 0;
-  unsigned sea_first = 0, lake_first = 0;
-
-  for (unsigned i = 0; i < MAX_NUM_VOLUMES; i++) {
-    if (lock->lake_3d.volumes[i] > 0) {
-      if (!lake_num) {
-        lake_first = i;
-      }
-      lake_num++;
-    }
-    if (lock->sea_3d.volumes[i] > 0) {
-      if (!sea_num) {
-        sea_first = i;
-      }
-      sea_num++;
-    }
-  }
-  lock->lake_3d.num_active_cells = lake_num;
-  lock->lake_3d.first_active_cell = lake_first;
-  lock->sea_3d.num_active_cells = sea_num;
-  lock->sea_3d.first_active_cell = sea_first;
+void sealock_get_active_layers(sealock_state_t *lock) {
+  sealock_get_active_cells(&lock->lake_volumes);
+  sealock_get_active_cells(&lock->sea_volumes);
 }
 
-static int sealock_distribute(sealock_state_t* lock, double quantity, double* buffer_ptr) {
+// Collect aggregate of quantity from dfm layer buffer into scalar.
+static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) { 
+  double aggregate = 0.0;
+
+  assert(volumes);
+  assert(buffer_ptr);
+
+  for (int i = 0; i < volumes->num_active_cells; i++) {
+    aggregate += buffer_ptr[volumes->first_active_cell + i];
+  }
+
+  return aggregate;
+}
+
+// Collect all scalar inputs that are provided in layers by dfm.
+static int sealock_collect_layers(sealock_state_t *lock) {
+  dfm_volumes_t *lake_volumes, *sea_volumes;
+
+  assert(lock);
+
+  lake_volumes = &lock->lake_volumes;
+  sea_volumes = &lock->sea_volumes;
+
+  lock->parameters.salinity_lake = sealock_collect(lake_volumes, lock->parameters3d.salinity_lake);
+  lock->parameters.salinity_sea = sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
+
+  return SEALOCK_OK;
+}
+
+// Distribute scalar quantity over layers into layer buffer.
+static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double quantity, double* buffer_ptr) {
   layers_t layers;
   layered_discharge_t result;
   unsigned first_active;
 
-  assert(lock);
+  assert(volumes);
   assert(buffer_ptr);
 
   // Clear also non-active output cells to zero.
   memset(buffer_ptr, 0, MAX_NUM_VOLUMES * sizeof(double));
 
-  first_active = lock->lake_3d.first_active_cell;
-  layers.number_of_layers = lock->lake_3d.num_active_cells;
+  first_active = volumes->first_active_cell;
+  layers.number_of_layers = volumes->num_active_cells;
   layers.normalized_target_volumes = &buffer_ptr[first_active];
   result.number_of_layers = layers.number_of_layers;
   result.discharge_per_layer = &buffer_ptr[first_active];
 
-  return distribute_discharge_over_layers(quantity, &lock->flow_profile,
-                                          &layers, &result);
+  return distribute_discharge_over_layers(quantity, profile, &layers, &result);
 }
 
 static int sealock_distribute_results(sealock_state_t *lock) {
-  if (sealock_distribute(lock, lock->results.mass_transport_lake, lock->lake_3d.mass_transport_lake) != 0) {
+  profile_t *lake_profile, *sea_profile;
+  dfm_volumes_t *lake_volumes, *sea_volumes;
+
+  assert(lock);
+
+  lake_profile = &lock->flow_profile;
+  sea_profile = &lock->flow_profile;
+  lake_volumes = &lock->lake_volumes;
+  sea_volumes = &lock->sea_volumes;
+
+  if (sealock_distribute(lake_volumes, lake_profile, lock->results.mass_transport_lake, lock->results3d.mass_transport_lake) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.salt_load_lake, lock->lake_3d.salt_load_lake) != 0) {
+  if (sealock_distribute(lake_volumes, lake_profile, lock->results.salt_load_lake,
+                         lock->results3d.salt_load_lake) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.discharge_from_lake,
-                             lock->lake_3d.discharge_from_lake) != 0) {
+  if (sealock_distribute(lake_volumes, lake_profile, lock->results.discharge_from_lake,
+                             lock->results3d.discharge_from_lake) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.discharge_to_lake, lock->lake_3d.discharge_to_lake) != 0) {
+  if (sealock_distribute(lake_volumes, lake_profile, lock->results.discharge_to_lake,
+                         lock->results3d.discharge_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.salinity_to_lake, lock->lake_3d.salinity_to_lake) != 0) {
+  if (sealock_distribute(lake_volumes, lake_profile, lock->results.salinity_to_lake,
+                         lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.mass_transport_sea, lock->sea_3d.mass_transport_sea) != 0) {
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.mass_transport_sea,
+                         lock->results3d.mass_transport_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.salt_load_sea, lock->sea_3d.salt_load_sea) != 0) {
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salt_load_sea, lock->results3d.salt_load_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.discharge_from_sea, lock->sea_3d.discharge_from_sea) != 0) {
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_from_sea, lock->results3d.discharge_from_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.discharge_to_sea, lock->sea_3d.discharge_to_sea) != 0) {
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_to_sea, lock->results3d.discharge_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(lock, lock->results.salinity_to_sea, lock->sea_3d.salinity_to_sea) != 0) {
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salinity_to_sea, lock->results3d.salinity_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
   return SEALOCK_OK;
