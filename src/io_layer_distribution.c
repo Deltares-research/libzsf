@@ -98,23 +98,18 @@ double integrate_piecewise_linear_profile(const profile_t *profile, const double
 int distribute_discharge_over_layers(double total_discharge, const profile_t *profile,
                                      const layers_t *layers,
                                      layered_discharge_t *layered_discharge_result) {
+  assert(layers != NULL);
+  assert(layers->number_of_layers > 0);
   assert(layered_discharge_result != NULL);
-  assert(layered_discharge_result->discharge_per_layer == NULL);
+  assert(layered_discharge_result->number_of_layers == layers->number_of_layers);
+  assert(layered_discharge_result->discharge_per_layer != NULL);
   assert(profile->relative_z_position != NULL);
   assert(profile->relative_discharge_from_lock != NULL);
   assert(profile->number_of_positions > 0);
-  assert(layers->number_of_layers > 0);
 
   double total_relative_discharge = 0.0;
   if (profile->number_of_positions <= 0 || abs(profile->relative_z_position[0]) > FLT_EPSILON ||
       abs(profile->relative_z_position[profile->number_of_positions - 1] - 1.0) > FLT_EPSILON) {
-    return -1;
-  }
-
-  layered_discharge_result->number_of_layers = layers->number_of_layers;
-  layered_discharge_result->discharge_per_layer =
-      malloc(layered_discharge_result->number_of_layers * sizeof(double));
-  if (layered_discharge_result->discharge_per_layer == NULL) {
     return -1;
   }
 
