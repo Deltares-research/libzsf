@@ -131,6 +131,10 @@ int set_var(const char *key, void *src_ptr) {
     dest_ptr = &config.locks[lock_index].parameters.salinity_sea;
   } else if (match_key(quantity, "head_sea")) {
     dest_ptr = &config.locks[lock_index].parameters.head_sea;
+  } else if (match_key(quantity, "water_volume_lake")) {
+    dest_ptr = &config.locks[lock_index].lake_3d.volumes;
+  } else if (match_key(quantity, "water_volume_sea")) {
+    dest_ptr = &config.locks[lock_index].sea_3d.volumes;
   }
 
   if (src_ptr == NULL || dest_ptr == NULL) {
@@ -173,25 +177,29 @@ int get_var(const char *key, void **dst_ptr) {
 
   // Set source based on key(s)...
   if (match_key(quantity, "mass_transport_lake")) {
-    source_ptr = &config.locks[lock_index].results.mass_transport_lake;
+    source_ptr = config.locks[lock_index].lake_3d.mass_transport_lake;
   } else if (match_key(quantity, "salt_load_lake")) {
-    source_ptr = &config.locks[lock_index].results.salt_load_lake;
+    source_ptr = config.locks[lock_index].lake_3d.salt_load_lake;
   } else if (match_key(quantity, "discharge_from_lake")) {
-    source_ptr = &config.locks[lock_index].results.discharge_from_lake;
+    source_ptr = config.locks[lock_index].lake_3d.discharge_from_lake;
   } else if (match_key(quantity, "discharge_to_lake")) {
-    source_ptr = &config.locks[lock_index].results.discharge_to_lake;
+    source_ptr = config.locks[lock_index].lake_3d.discharge_to_lake;
   } else if (match_key(quantity, "salinity_to_lake")) {
-    source_ptr = &config.locks[lock_index].results.salinity_to_lake;
+    source_ptr = config.locks[lock_index].lake_3d.salinity_to_lake;
   } else if (match_key(quantity, "mass_transport_sea")) {
-    source_ptr = &config.locks[lock_index].results.mass_transport_sea;
+    source_ptr = config.locks[lock_index].sea_3d.mass_transport_sea;
   } else if (match_key(quantity, "salt_load_sea")) {
-    source_ptr = &config.locks[lock_index].results.salt_load_sea;
+    source_ptr = config.locks[lock_index].sea_3d.salt_load_sea;
   } else if (match_key(quantity, "discharge_from_sea")) {
-    source_ptr = &config.locks[lock_index].results.discharge_from_sea;
+    source_ptr = config.locks[lock_index].sea_3d.discharge_from_sea;
   } else if (match_key(quantity, "discharge_to_sea")) {
-    source_ptr = &config.locks[lock_index].results.discharge_to_sea;
+    source_ptr = config.locks[lock_index].sea_3d.discharge_to_sea;
   } else if (match_key(quantity, "salinity_to_sea")) {
-    source_ptr = &config.locks[lock_index].results.salinity_to_sea;
+    source_ptr = config.locks[lock_index].sea_3d.salinity_to_sea;
+  } else if (match_key(quantity, "volumes_in_lake")) {
+    source_ptr = config.locks[lock_index].lake_3d.volumes;
+  } else if (match_key(quantity, "volumes_in_sea")) {
+    source_ptr = config.locks[lock_index].sea_3d.volumes;
   }
 
   if (dst_ptr == NULL || source_ptr == NULL) {
