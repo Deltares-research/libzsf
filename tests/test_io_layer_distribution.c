@@ -110,7 +110,10 @@ static void test_distribute_over_two_layers(void) {
   two_layers.normalized_target_volumes[1] = 0.7;
 
   const double total_discharge = 95.13;
+  double discharges[2] = {0.0, 0.0};
   layered_discharge_t result = layered_discharge_default;
+  result.number_of_layers = 2;
+  result.discharge_per_layer = discharges;
   TEST_ASSERT_EQUAL(
       distribute_discharge_over_layers(total_discharge, &linear_profile, &two_layers, &result), 0);
 
@@ -123,7 +126,6 @@ static void test_distribute_over_two_layers(void) {
 
   cleanup_profile(&linear_profile);
   cleanup_layers(&two_layers);
-  cleanup_layered_discharge(&result);
 }
 
 int main(void) {
