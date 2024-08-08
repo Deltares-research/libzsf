@@ -5,7 +5,9 @@
 #include "load_time_averaged.h"
 #include "timestamp.h"
 
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 int sealock_init(sealock_state_t* lock, time_t start_time) {
@@ -107,6 +109,7 @@ static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
   if (status == SEALOCK_OK) {
     lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
     lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
+    status = sealock_distribute_results(lock);
   }
 
   return status;
@@ -202,6 +205,90 @@ int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time) {
     break;
   }
   return status;
+}
+
+// Determine the number and start of active layers.
+// Underlying assumption is that the volumes have one
+// contiguous run of non-zero cells.
+void sealock_get_active_layers(sealock_state_t* lock) {
+  // Determine amount of active volumes.
+  unsigned sea_num = 0, lake_num = 0;
+  unsigned sea_first = 0, lake_first = 0;
+
+  for (unsigned i = 0; i < MAX_NUM_VOLUMES; i++) {
+    if (lock->lake_3d.volumes[i] > 0) {
+      if (!lake_num) {
+        lake_first = i;
+      }
+      lake_num++;
+    }
+    if (lock->sea_3d.volumes[i] > 0) {
+      if (!sea_num) {
+        sea_first = i;
+      }
+      sea_num++;
+    }
+  }
+  lock->lake_3d.num_active_cells = lake_num;
+  lock->lake_3d.first_active_cell = lake_first;
+  lock->sea_3d.num_active_cells = sea_num;
+  lock->sea_3d.first_active_cell = sea_first;
+}
+
+static int sealock_distribute(sealock_state_t* lock, double quantity, double* buffer_ptr) {
+  layers_t layers;
+  layered_discharge_t result;
+  unsigned first_active;
+
+  assert(lock);
+  assert(buffer_ptr);
+
+  // Clear also non-active output cells to zero.
+  memset(buffer_ptr, 0, MAX_NUM_VOLUMES * sizeof(double));
+
+  first_active = lock->lake_3d.first_active_cell;
+  layers.number_of_layers = lock->lake_3d.num_active_cells;
+  layers.normalized_target_volumes = &buffer_ptr[first_active];
+  result.number_of_layers = layers.number_of_layers;
+  result.discharge_per_layer = &buffer_ptr[first_active];
+
+  return distribute_discharge_over_layers(quantity, &lock->flow_profile,
+                                          &layers, &result);
+}
+
+static int sealock_distribute_results(sealock_state_t *lock) {
+  if (sealock_distribute(lock, lock->results.mass_transport_lake, lock->lake_3d.mass_transport_lake) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.salt_load_lake, lock->lake_3d.salt_load_lake) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.discharge_from_lake,
+                             lock->lake_3d.discharge_from_lake) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.discharge_to_lake, lock->lake_3d.discharge_to_lake) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.salinity_to_lake, lock->lake_3d.salinity_to_lake) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.mass_transport_sea, lock->sea_3d.mass_transport_sea) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.salt_load_sea, lock->sea_3d.salt_load_sea) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.discharge_from_sea, lock->sea_3d.discharge_from_sea) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.discharge_to_sea, lock->sea_3d.discharge_to_sea) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_distribute(lock, lock->results.salinity_to_sea, lock->sea_3d.salinity_to_sea) != 0) {
+    return SEALOCK_ERROR;
+  }
+  return SEALOCK_OK;
 }
 
 int sealock_update(sealock_state_t *lock, time_t time) {
