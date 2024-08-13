@@ -70,9 +70,45 @@ static int sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t
 }
 
 static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t time) {
-  sealock_update_current_row(lock, time);
-  // TODO: implement me: See UNST-7866.
-  return SEALOCK_OK;
+  int status = SEALOCK_OK;
+  phase_wise_row_t row_data = PHASE_WISE_CLEAR_ROW();
+  if (sealock_update_current_row(lock, time)) {
+    status = get_csv_row_data(&lock->timeseries_data, lock->current_row, &row_data);
+    if (status == SEALOCK_OK) {
+      lock->phase_args = PHASE_WISE_CLEAR_ARGS();
+      // copy relevant args to lock.
+      lock->phase_args.run_update = 1;
+      lock->phase_args.routine = row_data.routine;
+      lock->parameters.density_current_factor_sea = row_data.density_current_factor_sea;
+      lock->parameters.density_current_factor_lake = row_data.density_current_factor_lake;
+      lock->parameters.ship_volume_sea_to_lake = 0;
+      lock->parameters.ship_volume_lake_to_sea = 0;
+      switch (row_data.routine) {
+      case 1:
+      case 3:
+        lock->phase_args.t_level = row_data.t_level;
+        break;
+      case 2:
+        lock->phase_args.t_open_lake = row_data.t_open_lake;
+        lock->parameters.ship_volume_lake_to_sea = row_data.ship_volume_lake_to_sea;
+        break;
+      case 4:
+        lock->phase_args.t_open_sea = row_data.t_open_sea;
+        lock->parameters.ship_volume_sea_to_lake = row_data.ship_volume_sea_to_lake;
+        break;
+      default:
+        if (row_data.routine < 0) {
+          lock->phase_args.t_flushing = row_data.t_flushing;
+        } else {
+          status = SEALOCK_ERROR;
+        }
+        break;
+      }
+    }
+  } else {
+    lock->phase_args.run_update = 0;
+  }
+  return status;
 }
 
 int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time) {

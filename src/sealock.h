@@ -21,15 +21,31 @@ typedef enum zsf_computation_mode_enum {
   phase_wise_mode
 } zsf_computation_mode_t;
 
+typedef struct zsf_phase_wise_args_struct {
+  int run_update;
+  int routine;
+  double t_level;
+  double t_open_lake;
+  double t_open_sea;
+  double t_flushing;
+} zsf_phase_wise_args_t;
+
+#define PHASE_WISE_CLEAR_ARGS()                                                                    \
+  (zsf_phase_wise_args_t) {                                                                        \
+    .run_update = 0, .routine = 0, .t_level = 0, .t_open_lake = 0, .t_open_sea = 0,                \
+    .t_flushing = 0                                                                                \
+  }
+
 typedef struct sealock_state_struct {
   char *id;
   // ZSF
   zsf_param_t parameters;
+  zsf_phase_wise_args_t phase_args;
   zsf_phase_state_t phase_state;
+  zsf_phase_transports_t phase_results;
   zsf_results_t results;
   zsf_aux_results_t aux_results;
   zsf_computation_mode_t computation_mode;
-  zsf_phase_transports_t phase_results;
   // Cycle average
   char *operational_parameters_file;
   csv_context_t timeseries_data;
