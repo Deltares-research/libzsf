@@ -79,7 +79,7 @@ int get_csv_row_data(csv_context_t *context, size_t row_index, void *struct_ptr)
 int get_csv_column_data(csv_context_t *context, char *label, void *array_ptr, size_t array_len);
 
 #  define CSV_SETTER(S, A, VA)                                                                     \
-    int set_##A(void *ptr, csv_value_t value) {                                                    \
+    static int set_##A(void *ptr, csv_value_t value) {                                                    \
       S *dataptr = (S *)ptr;                                                                       \
       dataptr->A = value.data.VA;                                                                  \
       return CSV_OK;                                                                               \
