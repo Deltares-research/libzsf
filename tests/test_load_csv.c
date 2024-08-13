@@ -13,9 +13,9 @@ typedef struct s_data {
   double value;
 } t_data;
 
-static CSV_LONG_SETTER(t_data, time);
-static CSV_STRING_SETTER(t_data, label);
-static CSV_DOUBLE_SETTER(t_data, value);
+CSV_LONG_SETTER(t_data, time);
+CSV_STRING_SETTER(t_data, label);
+CSV_DOUBLE_SETTER(t_data, value);
 
 static void test_read_csv() {
   csv_context_t ctx;
