@@ -796,6 +796,7 @@ int ZSF_CALLCONV zsf_step_phase_4(const zsf_param_t *p, double t_open_sea, zsf_p
 
   return ZSF_SUCCESS;
 }
+
 int ZSF_CALLCONV zsf_calc_steady(const zsf_param_t *p, zsf_results_t *results,
                                  zsf_aux_results_t *aux_results) {
 
