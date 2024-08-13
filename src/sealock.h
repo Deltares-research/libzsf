@@ -23,11 +23,15 @@ typedef enum zsf_computation_mode_enum {
 
 typedef struct sealock_state_struct {
   char *id;
+  // ZSF
   zsf_param_t parameters;
   zsf_phase_state_t phase_state;
   zsf_results_t results;
   zsf_aux_results_t aux_results;
   zsf_computation_mode_t computation_mode;
+  zsf_phase_state_t phase_state;
+  zsf_phase_transports_t phase_results;
+  // Cycle average
   char *operational_parameters_file;
   csv_context_t timeseries_data;
   size_t current_row;
