@@ -65,6 +65,8 @@ set(ZSF_SOURCE_FILES
     src/csv/load_csv.h
     src/load_time_averaged.h
     src/load_time_averaged.c
+    src/load_phase_wise.h
+    src/load_phase_wise.c
     src/sealock.h
     src/sealock.c
     src/timestamp.h
