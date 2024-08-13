@@ -1,6 +1,7 @@
 
 
 #include "sealock.h"
+#include "load_phase_wise.h"
 #include "load_time_averaged.h"
 #include "timestamp.h"
 
@@ -12,7 +13,21 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
   size_t num_rows = 0;
 
   // read csv data
-  if (!load_time_averaged_timeseries(&lock->timeseries_data, filepath)) {
+  switch (lock->computation_mode) {
+  case cycle_average_mode:
+    status = load_time_averaged_timeseries(&lock->timeseries_data, filepath) ? SEALOCK_ERROR
+                                                                             : SEALOCK_OK;
+    break;
+  case phase_wise_mode:
+    status = load_phase_wise_timeseries(&lock->timeseries_data, filepath) ? SEALOCK_ERROR
+                                                                          : SEALOCK_OK;
+    break;
+  default:
+    status = SEALOCK_ERROR;
+    break;
+  }
+
+  if (status == SEALOCK_OK) {
     lock->current_row = 0;
     num_rows = get_csv_num_rows(&lock->timeseries_data);
     if (!num_rows)
@@ -36,12 +51,15 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
   return SEALOCK_ERROR;
 }
 
-static void sealock_update_current_row(sealock_state_t *lock, time_t time) {
+// Returns 1 if we skipped to a new row.
+static int sealock_update_current_row(sealock_state_t *lock, time_t time) {
   size_t row = lock->current_row;
+  size_t previous_row = row;
   while (time > lock->times[row] && row < lock->times_len) {
     row++;
   }
   lock->current_row = row ? row - 1 : 0;
+  return lock->current_row != previous_row;
 }
 
 static int sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t time) {
