@@ -32,28 +32,8 @@ int initialize(const char *config_file) {
   if (!config.num_locks)
     return DIMR_BMI_FAILURE;
 
-  for (sealock_index_t lock_index = 0; lock_index < config.num_locks; lock_index++) {
-    // Init calculation parameters with defaults.
-    zsf_param_default(&config.locks[lock_index].parameters);
-
-    // Load timeseries data when required.
-    if (config.locks[lock_index].operational_parameters_file) {
-      status = sealock_load_timeseries(&config.locks[lock_index],
-                                       config.locks[lock_index].operational_parameters_file);
-      if (status)
-        return zsf_to_dimr_status(status);
-    }
-
-    // Do one update to properly populate all parameters from timeseries for current time.
-    status = sealock_set_parameters_for_time(&config.locks[lock_index], config.current_time);
-    if (status)
-      return zsf_to_dimr_status(status);
-
-    // Initialize parameters consistent with current and given settings.
-    status = zsf_initialize_state(&config.locks[lock_index].parameters,
-                                  &config.locks[lock_index].phase_state,
-                                  config.locks[lock_index].phase_state.salinity_lock,
-                                  config.locks[lock_index].phase_state.head_lock);
+  for (sealock_index_t lock_index = 0; lock_index < config.num_locks && !status; lock_index++) {
+    status = sealock_init(&config.locks[lock_index], config.start_time);
   }
 
   return zsf_to_dimr_status(status);

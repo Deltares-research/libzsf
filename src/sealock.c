@@ -7,6 +7,31 @@
 
 #include <stdlib.h>
 
+
+int sealock_init(sealock_state_t* lock, time_t start_time) {
+  int status = SEALOCK_OK;
+  // Init calculation parameters with defaults.
+  zsf_param_default(&lock->parameters);
+
+  // Load timeseries data when required.
+  if (lock->operational_parameters_file) {
+    status = sealock_load_timeseries(lock, lock->operational_parameters_file);
+  }
+
+  if (status == SEALOCK_OK) {
+    // Do one update to properly populate all parameters from timeseries for current time.
+    status = sealock_set_parameters_for_time(lock, start_time);
+  }
+
+  if (status == SEALOCK_OK) {
+    // Initialize parameters consistent with current and given settings.
+    status = zsf_initialize_state(&lock->parameters, &lock->phase_state,
+                                  lock->phase_state.salinity_lock, lock->phase_state.head_lock);
+  }
+
+  return status;
+}
+
 int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
   int status = SEALOCK_OK;
   double *time_column = NULL;
@@ -44,11 +69,10 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
         }
       }
       free(time_column);
-      return status;
     }
   }
 
-  return SEALOCK_ERROR;
+  return status;
 }
 
 // Returns 1 if we skipped to a new row.
@@ -67,6 +91,19 @@ static int sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t
   return get_csv_row_data(&lock->timeseries_data, lock->current_row, &lock->parameters) == CSV_OK
              ? SEALOCK_OK
              : SEALOCK_ERROR;
+}
+
+static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
+  int status = SEALOCK_OK;
+
+  status = zsf_calc_steady(&lock->parameters, &lock->results, NULL);
+  // Adjust result value signs to align with D-Flow FM conventions.
+  if (status == SEALOCK_OK) {
+    lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
+    lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
+  }
+
+  return status;
 }
 
 static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t time) {
@@ -111,6 +148,39 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
   return status;
 }
 
+static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
+  int status = SEALOCK_OK;
+
+  switch (lock->phase_args.routine) {
+  case 1:
+    status = zsf_step_phase_1(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
+                              &lock->results);
+    break;
+  case 2:
+    status = zsf_step_phase_2(&lock->parameters, lock->phase_args.t_open_lake, &lock->phase_state,
+                              &lock->results);
+    break;
+  case 3:
+    status = zsf_step_phase_3(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
+                              &lock->results);
+    break;
+  case 4:
+    status = zsf_step_phase_4(&lock->parameters, lock->phase_args.t_open_sea, &lock->phase_state,
+                              &lock->results);
+    break;
+  default:
+    if (lock->phase_args.routine < 0) {
+      status = zsf_step_flush_doors_closed(&lock->parameters, lock->phase_args.t_flushing,
+                                           &lock->phase_state, &lock->results);
+    } else {
+      status = SEALOCK_ERROR;
+    }
+    break;
+  }
+
+  return status;
+}
+
 int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
 
@@ -133,13 +203,10 @@ int sealock_update(sealock_state_t *lock, time_t time) {
   if (status == SEALOCK_OK) {
     switch (lock->computation_mode) {
     case cycle_average_mode:
-      status = zsf_calc_steady(&lock->parameters, &lock->results, NULL);
-      // Adjust result value signs to align with D-Flow FM conventions.
-      lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
-      lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
+      status = sealock_cycle_average_step(lock, time);
       break;
     case phase_wise_mode:
-      // TODO: Implement me: See UNST-7866.
+      status = sealock_phase_wise_step(lock, time);
       break;
     default:
       status = SEALOCK_ERROR; // Should never happen.
