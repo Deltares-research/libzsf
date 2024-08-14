@@ -63,7 +63,13 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
       if (status == SEALOCK_OK) {
         lock->times = timestamp_array_to_times(time_column, num_rows);
         if (lock->times) {
-          lock->times_len = num_rows;
+          if (times_strictly_increasing(lock->times, num_rows)) {
+            lock->times_len = num_rows;
+          } else {
+            free(lock->times);
+            lock->times = NULL;
+            status = SEALOCK_ERROR;
+          }
         } else {
           status = SEALOCK_ERROR;
         }
