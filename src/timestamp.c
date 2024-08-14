@@ -24,6 +24,15 @@ time_t timestamp_to_time(double timestamp) {
   return mktime(&date_time);
 }
 
+int times_strictly_increasing(time_t *times, size_t length) {
+  for (int i = 0; i < length - 1; i++) {
+    if (times[i + 1] <= times[i]) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 // Duplicate and convert timestamp double array to a time_t array.
 // Note: The caller is responsible for deallocating the time_t array.
 time_t *timestamp_array_to_times(double *timestamps, size_t length) {
