@@ -221,16 +221,30 @@ int get_value_ptr(char *key, void **dst_ptr) {
 int update(double dt) {
   int status = DIMR_BMI_OK;
   sealock_index_t lock_index = 0;
+  time_t new_time = config.current_time + (time_t)dt;
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
 #endif
-  config.current_time += (time_t)dt;
+  if (dt <= 0) {
+    return DIMR_BMI_FAILURE;
+  }
+
+  if (config.current_time == config.start_time) {
+    // Check if timestep is compatible with all loaded timeseries.
+    if (!sealock_delta_time_ok(&config.locks[lock_index], (time_t)dt)) {
+      return DIMR_BMI_FAILURE;
+    }
+  }
 
   for (sealock_index_t lock_index = 0; lock_index < config.num_locks; lock_index++) {
     if (sealock_update(&config.locks[lock_index], config.current_time)) {
       status = DIMR_BMI_FAILURE;
     }
+  }
+
+  if (status == SEALOCK_OK) {
+    config.current_time = new_time;
   }
 
   return status;
