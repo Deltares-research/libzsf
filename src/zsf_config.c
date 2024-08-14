@@ -34,7 +34,7 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
       } else if (!strcmp(value, "phase_wise")) {
         config_ptr->locks[lock_index].computation_mode = phase_wise_mode;
       } else {
-        return INI_FAIL;
+        status = INI_FAIL;
       }
     } else if (!strcmp(key, "sealock_operational_parameters")) {
       config_ptr->locks[lock_index].operational_parameters_file = strdup(value);
@@ -42,6 +42,7 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
       config_ptr->locks[lock_index].phase_state.head_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_salinity_lock")) {
       config_ptr->locks[lock_index].phase_state.salinity_lock = ini_parse_double(value, &status);
+      config_ptr->locks[lock_index].parameters.salinity_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_saltmass_lock")) {
       config_ptr->locks[lock_index].phase_state.saltmass_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_temperature_lock")) {
