@@ -63,6 +63,7 @@ int sealock_init(sealock_state_t *lock, time_t start_time);
 int sealock_load_timeseries(sealock_state_t *lock, char *filepath);
 int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time);
 int sealock_update(sealock_state_t *lock, time_t time);
+int sealock_delta_time_ok(sealock_state_t *lock, time_t delta_time);
 
 #if defined(__cplusplus)
 }
