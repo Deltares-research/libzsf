@@ -154,24 +154,24 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
   switch (lock->phase_args.routine) {
   case 1:
     status = zsf_step_phase_1(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
-                              &lock->results);
+                              &lock->phase_results);
     break;
   case 2:
     status = zsf_step_phase_2(&lock->parameters, lock->phase_args.t_open_lake, &lock->phase_state,
-                              &lock->results);
+                              &lock->phase_results);
     break;
   case 3:
     status = zsf_step_phase_3(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
-                              &lock->results);
+                              &lock->phase_results);
     break;
   case 4:
     status = zsf_step_phase_4(&lock->parameters, lock->phase_args.t_open_sea, &lock->phase_state,
-                              &lock->results);
+                              &lock->phase_results);
     break;
   default:
     if (lock->phase_args.routine < 0) {
       status = zsf_step_flush_doors_closed(&lock->parameters, lock->phase_args.t_flushing,
-                                           &lock->phase_state, &lock->results);
+                                           &lock->phase_state, &lock->phase_results);
     } else {
       status = SEALOCK_ERROR;
     }
