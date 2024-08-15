@@ -222,7 +222,7 @@ int sealock_update(sealock_state_t *lock, time_t time) {
   return status;
 }
 
-// Check if none of
+// Check if none of the time steps in the timeseries is shorter than delta_time
 int sealock_delta_time_ok(sealock_state_t* lock, time_t delta_time) {
   for (int i = 0; i < lock->times_len-1; i++) {
     if (lock->times[i + 1] - lock->times[i] < delta_time) {
