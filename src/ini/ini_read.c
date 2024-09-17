@@ -27,14 +27,14 @@ static inline int at_equals(const char *p) {
 static inline int at_section_start(const char *p) { return (*p == ini_section_start_char); }
 static inline int at_section_end(const char *p) { return (*p == ini_section_end_char); }
 
-static char *skip_space(const char *ptr) {
+static char *skip_space(char *ptr) {
   while (ptr && *ptr && isspace(*ptr) && !at_eol(ptr)) {
     ptr++;
   }
   return ptr;
 }
 
-static int end_ptr_at_end(const char *end_ptr) {
+static int end_ptr_at_end(char *end_ptr) {
   char *real_end = skip_space(end_ptr);
   return real_end && !*real_end;
 }
