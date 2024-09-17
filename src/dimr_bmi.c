@@ -235,7 +235,9 @@ int update(double dt) {
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
 #endif
   if (dt <= 0) {
-    return DIMR_BMI_FAILURE;
+    // DIMR sends dt == 0 as a first timestep, to singal 'init'.
+    // We will silently ignore this as we are already set up.
+    return DIMR_BMI_OK;
   }
 
   if (config.current_time == config.start_time) {
