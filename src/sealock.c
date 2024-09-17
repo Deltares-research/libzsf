@@ -213,20 +213,14 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   unsigned amount = 0;
   unsigned first = 0;
   unsigned last = MAX_NUM_VOLUMES-1;
-  for (unsigned i = 0; i < MAX_NUM_VOLUMES; i++) {
-    if (volumes->volumes[i] > 0) {
-      first = i;
-      break;
-    }
+  while (first < MAX_NUM_VOLUMES && volumes->volumes[first] <= 0) {
+    first++;
   }
-  for (unsigned i = MAX_NUM_VOLUMES; i > 0; --i) {
-    if (volumes->volumes[i] > 0) {
-      last = i;
-      break;
-    }
+  while (last > 0 && volumes->volumes[last] <= 0) {
+    last--;
   }
-  if (last > first) {
-    amount = last - first;
+  if (last >= first) {
+    amount = last - first + 1;
   }
   volumes->num_active_cells = amount;
   volumes->first_active_cell = first;
