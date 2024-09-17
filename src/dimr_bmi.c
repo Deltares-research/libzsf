@@ -234,8 +234,11 @@ int update(double dt) {
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
 #endif
-  if (dt <= 0) {
-    // DIMR sends dt == 0 as a first timestep, to singal 'init'.
+
+  if(dt < 0) {
+    return DIMR_BMI_FAILURE;
+  } else if ((int)dt == 0) {
+    // DIMR sends dt == 0 as a first timestep, to signal 'init'.
     // We will silently ignore this as we are already set up.
     return DIMR_BMI_OK;
   }
