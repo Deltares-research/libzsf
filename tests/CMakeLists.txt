@@ -25,3 +25,7 @@ add_test(NAME test_load_csv COMMAND test_load_csv WORKING_DIRECTORY ${CMAKE_CURR
 add_executable(test_ini_read test_ini_read.c)
 target_link_libraries(test_ini_read PRIVATE test_dependencies)
 add_test(NAME test_ini_read COMMAND test_ini_read WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(test_timestamp test_timestamp.c)
+target_link_libraries(test_timestamp PRIVATE test_dependencies)
+add_test(NAME test_timestamp COMMAND test_timestamp)

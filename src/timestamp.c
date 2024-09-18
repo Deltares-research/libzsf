@@ -58,11 +58,11 @@ double time_to_timestamp(time_t t) {
 
   if (t >= 0) {
     date_time = localtime(&t);
-    timestamp = (date_time->tm_year + 1900.0) * 100000000.0;
-    timestamp += (date_time->tm_mon + 1.0) * 1000000.0;
-    timestamp += date_time->tm_mday * 10000.0;
+    timestamp = date_time->tm_min;
     timestamp += date_time->tm_hour * 100.0;
-    timestamp += date_time->tm_min;
+    timestamp += date_time->tm_mday * 10000.0;
+    timestamp += (date_time->tm_mon + 1.0) * 1000000.0;
+    timestamp += (double)(date_time->tm_year + 1900.0) * 100000000.0;
   }
 
   return timestamp;
