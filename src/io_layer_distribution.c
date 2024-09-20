@@ -43,6 +43,25 @@ double* io_layer_linear_z_positions(const int number_of_layers) {
   return linear_z_positions;
 }
 
+// Set up a default '2D' profile.
+int io_layer_init_2d(profile_t *profile) {
+  int array_length = 0;
+  double *value_array = calloc(2, sizeof(double));
+  double *linear_z_positions = io_layer_linear_z_positions(2);
+  if (value_array && linear_z_positions) {
+    value_array[0] = 1.0;
+    value_array[1] = 1.0;
+    *profile = (profile_t){.number_of_positions = 2,
+                .relative_discharge_from_lock = value_array,
+                .relative_z_position = linear_z_positions};
+  } else {
+    free(value_array);
+    free(linear_z_positions);
+    return -1;
+  }
+  return 0;
+}
+
 
 // Integrate relative_discharge_from_lock(x) with x from 0 to 1, assuming that relative_z_position[0] == 0 and relative_z_position[number_of_positions - 1] == 1.
 // Further, the profile is assumed to be piecewise linear, and is a linear interpolation between the given relative_z_positions.

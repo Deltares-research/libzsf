@@ -251,7 +251,7 @@ int update(double dt) {
   }
 
   for (sealock_index_t lock_index = 0; lock_index < config.num_locks; lock_index++) {
-    if (sealock_update(&config.locks[lock_index], config.current_time)) {
+    if (sealock_update(&config.locks[lock_index], new_time)) {
       status = DIMR_BMI_FAILURE;
     }
   }
