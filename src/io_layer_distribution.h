@@ -39,6 +39,8 @@ typedef struct layered_discharge_struct layered_discharge_t;
 
 double *io_layer_linear_z_positions(const number_of_layers);
 
+int io_layer_init_2d(profile_t *profile);
+
 void cleanup_layered_discharge(layered_discharge_t *layered_discharge);
 
 double integrate_piecewise_linear_profile(const profile_t *profile, const double lower_bound,
