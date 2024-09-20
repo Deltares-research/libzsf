@@ -124,11 +124,11 @@ int set_var(const char *key, void *src_ptr) {
 
   // Set dest_ptr for intended lock and quantity.
   if (match_key(quantity, "salinity_lake")) {
-    dest_ptr = &config.locks[lock_index].parameters.salinity_lake;
+    dest_ptr = config.locks[lock_index].parameters3d.salinity_lake;
   } else if (match_key(quantity, "head_lake")) {
     dest_ptr = &config.locks[lock_index].parameters.head_lake;
   } else if (match_key(quantity, "salinity_sea")) {
-    dest_ptr = &config.locks[lock_index].parameters.salinity_sea;
+    dest_ptr = config.locks[lock_index].parameters3d.salinity_sea;
   } else if (match_key(quantity, "head_sea")) {
     dest_ptr = &config.locks[lock_index].parameters.head_sea;
   } else if (match_key(quantity, "water_volume_lake")) {
@@ -229,7 +229,8 @@ int get_value_ptr(char *key, void **dst_ptr) {
 int update(double dt) {
   int status = DIMR_BMI_OK;
   sealock_index_t lock_index = 0;
-  time_t new_time = config.current_time + (time_t)dt;
+  time_t delta_time = (time_t)dt;
+  time_t new_time = config.current_time + delta_time;
 
 #if ZSF_VERBOSE
   printf("ZSF: %s( %g ) called.\n", __func__, dt);
@@ -237,13 +238,9 @@ int update(double dt) {
 
   if(dt < 0) {
     return DIMR_BMI_FAILURE;
-  } else if ((int)dt == 0) {
-    // DIMR sends dt == 0 as a first timestep, to signal 'init'.
-    // We will silently ignore this as we are already set up.
-    return DIMR_BMI_OK;
   }
 
-  if (config.current_time == config.start_time) {
+  if (config.current_time == config.start_time && delta_time > 0) {
     // Check if timestep is compatible with all loaded timeseries.
     if (!sealock_delta_time_ok(&config.locks[lock_index], (time_t)dt)) {
       return DIMR_BMI_FAILURE;
