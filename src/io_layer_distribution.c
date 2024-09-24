@@ -45,7 +45,7 @@ double* io_layer_linear_z_positions(const int number_of_layers) {
 
 // Set up a default '2D' profile
 #define IO_2D_PROFILE_SIZE (2)
-#define IO_2D_PROFILE() { 0.0, 2.0 }
+#define IO_2D_PROFILE() { 1.0, 1.0 }
 int io_layer_init_2d(profile_t *profile) {
   int array_length = 0;
   double default_values[IO_2D_PROFILE_SIZE] = IO_2D_PROFILE();
