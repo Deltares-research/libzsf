@@ -22,6 +22,7 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
     assert(!*key || lock_index >= 0);
     if (!*key) {
       if (config_ptr->num_locks < ZSF_MAX_LOCKS) {
+        status = sealock_defaults(&config_ptr->locks[config_ptr->num_locks]);
         config_ptr->num_locks++;
       } else {
         return INI_FAIL;
