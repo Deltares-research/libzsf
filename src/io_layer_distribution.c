@@ -43,15 +43,17 @@ double* io_layer_linear_z_positions(const int number_of_layers) {
   return linear_z_positions;
 }
 
-// Set up a default '2D' profile.
+// Set up a default '2D' profile
+#define IO_2D_PROFILE_SIZE (2)
+#define IO_2D_PROFILE() { 0.0, 2.0 }
 int io_layer_init_2d(profile_t *profile) {
   int array_length = 0;
-  double *value_array = calloc(2, sizeof(double));
-  double *linear_z_positions = io_layer_linear_z_positions(2);
+  double default_values[IO_2D_PROFILE_SIZE] = IO_2D_PROFILE();
+  double *value_array = calloc(IO_2D_PROFILE_SIZE, sizeof(double));
+  double *linear_z_positions = io_layer_linear_z_positions(IO_2D_PROFILE_SIZE);
   if (value_array && linear_z_positions) {
-    value_array[0] = 1.0;
-    value_array[1] = 1.0;
-    *profile = (profile_t){.number_of_positions = 2,
+    memcpy(value_array, default_values, sizeof(double) * IO_2D_PROFILE_SIZE);
+    *profile = (profile_t){.number_of_positions = IO_2D_PROFILE_SIZE,
                 .relative_discharge_from_lock = value_array,
                 .relative_z_position = linear_z_positions};
   } else {
