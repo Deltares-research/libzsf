@@ -289,7 +289,7 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
 
   first_active = volumes->first_active_cell;
   layers.number_of_layers = volumes->num_active_cells;
-  layers.normalized_target_volumes = &buffer_ptr[first_active];
+  layers.normalized_target_volumes = volumes->volumes;
   result.number_of_layers = layers.number_of_layers;
   result.discharge_per_layer = &buffer_ptr[first_active];
 
