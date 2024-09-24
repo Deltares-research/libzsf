@@ -89,7 +89,7 @@ typedef struct sealock_state_struct {
   dfm_results3d_t results3d;
 } sealock_state_t;
 
-
+int sealock_defaults(sealock_state_t *lock);
 int sealock_init(sealock_state_t *lock, time_t start_time);
 int sealock_load_timeseries(sealock_state_t *lock, char *filepath);
 int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time);

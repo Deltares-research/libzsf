@@ -9,12 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-int sealock_init(sealock_state_t* lock, time_t start_time) {
-  int status = SEALOCK_OK;
+int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
   zsf_param_default(&lock->parameters);
-
   // Set up default volumes/profile for '2D' case.
   lock->lake_volumes.volumes[0] = 1.0;
   lock->lake_volumes.first_active_cell = 0;
@@ -22,7 +19,12 @@ int sealock_init(sealock_state_t* lock, time_t start_time) {
   lock->sea_volumes.volumes[0] = 1.0;
   lock->sea_volumes.first_active_cell = 0;
   lock->sea_volumes.num_active_cells = 1;
-  status = io_layer_init_2d(&lock->flow_profile);
+  return io_layer_init_2d(&lock->flow_profile);
+}
+
+
+int sealock_init(sealock_state_t* lock, time_t start_time) {
+  int status = SEALOCK_OK;
 
   // Load timeseries data when required.
   if (status == SEALOCK_OK && lock->operational_parameters_file) {
