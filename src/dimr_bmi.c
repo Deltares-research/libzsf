@@ -135,6 +135,10 @@ int set_var(const char *key, void *src_ptr) {
     dest_ptr = config.locks[lock_index].lake_volumes.volumes;
   } else if (match_key(quantity, "water_volume_sea")) {
     dest_ptr = config.locks[lock_index].sea_volumes.volumes;
+  } else if (match_key(quantity, "temperature_lake")) {
+    dest_ptr = &config.locks[lock_index].parameters.temperature_lake;
+  } else if (match_key(quantity, "temperature_sea")) {
+    dest_ptr = &config.locks[lock_index].parameters.temperature_sea;
   }
 
   if (src_ptr == NULL || dest_ptr == NULL) {
