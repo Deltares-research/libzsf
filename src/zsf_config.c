@@ -47,7 +47,11 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
     } else if (!strcmp(key, "initial_saltmass_lock")) {
       config_ptr->locks[lock_index].phase_state.saltmass_lock = ini_parse_double(value, &status);
     } else if (!strcmp(key, "initial_temperature_lock")) {
-      // TODO: Add temperature to lock?
+      double temperature = ini_parse_double(value, &status);
+      if (status == INI_OK) {
+        config_ptr->locks[lock_index].parameters.temperature_lake = temperature;
+        config_ptr->locks[lock_index].parameters.temperature_sea = temperature;
+      }
     } else if (!strcmp(key, "initial_volume_ship_in_lock")) {
       config_ptr->locks[lock_index].phase_state.volume_ship_in_lock =
           ini_parse_double(value, &status);
