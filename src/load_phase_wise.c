@@ -32,7 +32,7 @@ int load_phase_wise_timeseries(csv_context_t *context, char *filepath) {
   status = status || def_csv_column(context, "t_open_sea", double_type, set_t_open_sea);
   status = status || def_csv_column(context, "density_current_factor_lake", double_type,
                                     set_density_current_factor_lake);
-  status = status || def_csv_column(context, "density_current_factor_lake", double_type,
-                                    set_density_current_factor_lake);
+  status = status || def_csv_column(context, "density_current_factor_sea", double_type,
+                                    set_density_current_factor_sea);
   return status || load_csv(context, filepath) ? CSV_ERROR : CSV_OK;
 }
