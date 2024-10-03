@@ -66,7 +66,7 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
   }
 
   if (status == SEALOCK_OK) {
-    lock->current_row = 0;
+    lock->current_row = NO_CURRENT_ROW;
     num_rows = get_csv_num_rows(&lock->timeseries_data);
     if (!num_rows)
       return SEALOCK_ERROR;
@@ -96,12 +96,13 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
 
 // Returns 1 if we skipped to a new row.
 static int sealock_update_current_row(sealock_state_t *lock, time_t time) {
-  size_t row = lock->current_row;
-  size_t previous_row = row;
+  size_t previous_row = lock->current_row;
+  size_t row = 0;
   while (time > lock->times[row] && row < lock->times_len) {
     row++;
   }
   lock->current_row = row ? row - 1 : 0;
+  // BUG: doesn't return 1 then called for the first time.
   return lock->current_row != previous_row;
 }
 
@@ -115,16 +116,83 @@ static int sealock_update_cycle_average_parameters(sealock_state_t *lock, time_t
 static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
 
-  sealock_collect_layers(lock);
   status = zsf_calc_steady(&lock->parameters, &lock->results, NULL);
   // Adjust result value signs to align with D-Flow FM conventions.
   if (status == SEALOCK_OK) {
     lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
     lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
-    status = sealock_distribute_results(lock);
   }
 
   return status;
+}
+
+/* copy phase_results to general results */
+static int sealock_phase_results_to_results(sealock_state_t* lock) {
+  // Copy phase_results to equivelent results struct.
+  // Also apply the sign convention for DIMR/BMI for discharge.
+  lock->results.discharge_from_lake = -lock->phase_results.discharge_from_lake;
+  lock->results.discharge_from_sea = -lock->phase_results.discharge_from_sea;
+  lock->results.discharge_to_lake = lock->phase_results.discharge_to_lake;
+  lock->results.discharge_to_sea = lock->phase_results.discharge_to_sea;
+  lock->results.mass_transport_lake = lock->phase_results.mass_transport_lake;
+  lock->results.mass_transport_sea = lock->phase_results.mass_transport_sea;
+  lock->results.salinity_to_lake = lock->phase_results.salinity_to_lake;
+  lock->results.salinity_to_sea = lock->phase_results.salinity_to_sea;
+  return SEALOCK_OK;
+}
+
+/* Set a correction for the current phase results for possibly skipping a bit of the start. */
+static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, time_t time, time_t duration,
+                                                      zsf_results_t *previous) {
+  time_t phase_start = lock->times[lock->current_row];
+  assert(time >= phase_start);
+  time_t skipped_time = time - phase_start;
+
+  if (skipped_time == 0) {
+    // No correction required.
+    return SEALOCK_OK;
+  }
+
+  if (lock->current_row + 1 < lock->times_len) {
+    time_t phase_end = phase_start + duration;
+    time_t new_phase_len = phase_end - phase_start - skipped_time;
+
+    // Calculate (corrected) volume, salt mass and resulting salinity for lake and sea.
+    double new_volume_to_lake = lock->results.discharge_to_lake * new_phase_len;
+    double missing_volume_to_lake =
+        (lock->results.discharge_to_lake - previous->discharge_to_lake) * skipped_time;
+    double total_volume_to_lake = new_volume_to_lake + missing_volume_to_lake;
+
+    double new_volume_to_sea = lock->results.discharge_to_sea * new_phase_len;
+    double missing_volume_to_sea =
+        (lock->results.discharge_to_sea - previous->discharge_to_sea) * skipped_time;
+    double total_volume_to_sea = new_volume_to_sea + missing_volume_to_sea;
+
+    double new_salt_to_lake = lock->results.salinity_to_lake * new_volume_to_lake;
+    double missing_salt_to_lake =
+        (lock->results.salinity_to_lake * lock->results.discharge_to_lake -
+         previous->salinity_to_lake * previous->discharge_to_lake) *
+        skipped_time;
+    double total_salt_to_lake = new_salt_to_lake + missing_salt_to_lake;
+
+    double new_salt_to_sea = lock->results.salinity_to_sea * new_volume_to_sea;
+    double missing_salt_to_sea = (lock->results.salinity_to_sea * lock->results.discharge_to_sea -
+                                  previous->salinity_to_sea * previous->discharge_to_sea) *
+                                 skipped_time;
+    double total_salt_to_sea = new_salt_to_sea + missing_salt_to_sea;
+
+    // TODO: What about discharge FROM_(sea/lake) ?
+
+    // Store corrected results
+    lock->results.discharge_to_lake = total_volume_to_lake / new_phase_len;
+    lock->results.discharge_to_sea = total_volume_to_sea / new_phase_len;
+    lock->results.salinity_to_lake = total_salt_to_lake / total_volume_to_lake;
+    lock->results.salinity_to_sea = total_salt_to_sea / total_volume_to_sea;
+  } else {
+    // TODO: Implement handling of last 'interval', see UNST-8169.
+  }
+
+  return SEALOCK_OK;
 }
 
 static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t time) {
@@ -163,42 +231,56 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
         break;
       }
     }
-  } else {
-    lock->phase_args.run_update = 0;
   }
   return status;
 }
 
 static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
+  time_t duration = 0;
 
-  switch (lock->phase_args.routine) {
-  case 1:
-    status = zsf_step_phase_1(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
-                              &lock->phase_results);
-    break;
-  case 2:
-    status = zsf_step_phase_2(&lock->parameters, lock->phase_args.t_open_lake, &lock->phase_state,
-                              &lock->phase_results);
-    break;
-  case 3:
-    status = zsf_step_phase_3(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
-                              &lock->phase_results);
-    break;
-  case 4:
-    status = zsf_step_phase_4(&lock->parameters, lock->phase_args.t_open_sea, &lock->phase_state,
-                              &lock->phase_results);
-    break;
-  default:
-    if (lock->phase_args.routine < 0) {
-      status = zsf_step_flush_doors_closed(&lock->parameters, lock->phase_args.t_flushing,
-                                           &lock->phase_state, &lock->phase_results);
-    } else {
-      status = SEALOCK_ERROR;
+  if (lock->phase_args.run_update) {
+    zsf_results_t previous_step_results = lock->results;
+    switch (lock->phase_args.routine) {
+    case 1:
+      duration = lock->phase_args.t_level;
+      status = zsf_step_phase_1(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
+                                &lock->phase_results);
+      break;
+    case 2:
+      duration = lock->phase_args.t_open_lake;
+      status = zsf_step_phase_2(&lock->parameters, lock->phase_args.t_open_lake, &lock->phase_state,
+                                &lock->phase_results);
+      break;
+    case 3:
+      duration = lock->phase_args.t_level;
+      status = zsf_step_phase_3(&lock->parameters, lock->phase_args.t_level, &lock->phase_state,
+                                &lock->phase_results);
+      break;
+    case 4:
+      duration = lock->phase_args.t_open_sea;
+      status = zsf_step_phase_4(&lock->parameters, lock->phase_args.t_open_sea, &lock->phase_state,
+                                &lock->phase_results);
+      break;
+    default:
+      if (lock->phase_args.routine < 0) {
+        duration = lock->phase_args.t_flushing;
+        status = zsf_step_flush_doors_closed(&lock->parameters, lock->phase_args.t_flushing,
+                                             &lock->phase_state, &lock->phase_results);
+      } else {
+        status = SEALOCK_ERROR;
+      }
+      break;
     }
-    break;
+    if (status == SEALOCK_OK) {
+      status = sealock_phase_results_to_results(lock);
+    }
+    if (status == SEALOCK_OK) {
+      status = sealock_apply_phase_wise_result_correction(lock, time, duration, &previous_step_results);
+    }
   }
 
+  lock->phase_args.run_update = 0; // Done with update, so reset flag.
   return status;
 }
 
@@ -350,6 +432,9 @@ static int sealock_distribute_results(sealock_state_t *lock) {
 int sealock_update(sealock_state_t *lock, time_t time) {
   int status = sealock_set_parameters_for_time(lock, time);
   if (status == SEALOCK_OK) {
+    status = sealock_collect_layers(lock);
+  }
+  if (status == SEALOCK_OK) {
     switch (lock->computation_mode) {
     case cycle_average_mode:
       status = sealock_cycle_average_step(lock, time);
@@ -358,9 +443,13 @@ int sealock_update(sealock_state_t *lock, time_t time) {
       status = sealock_phase_wise_step(lock, time);
       break;
     default:
-      status = SEALOCK_ERROR; // Should never happen.
+      assert(0);  // Should never happen.
+      status = SEALOCK_ERROR;
       break;
     }
+  }
+  if (status == SEALOCK_OK) {
+    status = sealock_distribute_results(lock);
   }
   return status;
 }
