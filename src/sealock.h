@@ -38,6 +38,7 @@ typedef struct zsf_phase_wise_args_struct {
   }
 
 #define MAX_NUM_VOLUMES 50
+#define NO_CURRENT_ROW (size_t)(-1)
 
 typedef struct dfm_volumes_struct {
   // input from fdm
