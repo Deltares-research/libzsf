@@ -145,8 +145,12 @@ static int sealock_phase_results_to_results(sealock_state_t* lock) {
 static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, time_t time, time_t duration,
                                                       zsf_results_t *previous) {
   time_t phase_start = lock->times[lock->current_row];
-  assert(time >= phase_start);
   time_t skipped_time = time - phase_start;
+  time_t new_phase_len = duration - skipped_time;
+
+  // Should always be true due to update before calculation.
+  assert(time >= phase_start);
+  assert(new_phase_len > 0);
 
   if (skipped_time == 0) {
     // No correction required.
@@ -154,9 +158,6 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
   }
 
   if (lock->current_row + 1 < lock->times_len) {
-    time_t phase_end = phase_start + duration;
-    time_t new_phase_len = phase_end - phase_start - skipped_time;
-
     // Calculate (corrected) volume, salt mass and resulting salinity for lake and sea.
     double new_volume_to_lake = lock->results.discharge_to_lake * new_phase_len;
     double missing_volume_to_lake =
@@ -200,7 +201,9 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     lock->results.discharge_from_lake = total_volume_from_lake / new_phase_len;
     lock->results.discharge_from_sea = total_volume_from_sea / new_phase_len;
   } else {
-    // TODO: Implement handling of last 'interval', see UNST-8169.
+    time_t dimr_interval = 60; // TODO: Check what is meant here and get is as a parameter.
+    lock->results.discharge_to_lake *= new_phase_len / dimr_interval;
+    lock->results.discharge_to_sea *= new_phase_len / dimr_interval;
   }
 
   return SEALOCK_OK;
