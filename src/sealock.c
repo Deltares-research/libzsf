@@ -181,13 +181,24 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
                                  skipped_time;
     double total_salt_to_sea = new_salt_to_sea + missing_salt_to_sea;
 
-    // TODO: What about discharge FROM_(sea/lake) ?
+    // Only do discharges 'from' lake and sea
+    double new_volume_from_lake = lock->results.discharge_from_lake * new_phase_len;
+    double missing_volume_from_lake =
+        (lock->results.discharge_from_lake - previous->discharge_from_lake) * skipped_time;
+    double total_volume_from_lake = new_volume_from_lake + missing_volume_from_lake;
+
+    double new_volume_from_sea = lock->results.discharge_from_sea * new_phase_len;
+    double missing_volume_from_sea =
+        (lock->results.discharge_from_sea - previous->discharge_from_sea) * skipped_time;
+    double total_volume_from_sea = new_volume_from_sea + missing_volume_from_sea;
 
     // Store corrected results
     lock->results.discharge_to_lake = total_volume_to_lake / new_phase_len;
     lock->results.discharge_to_sea = total_volume_to_sea / new_phase_len;
     lock->results.salinity_to_lake = total_salt_to_lake / total_volume_to_lake;
     lock->results.salinity_to_sea = total_salt_to_sea / total_volume_to_sea;
+    lock->results.discharge_from_lake = total_volume_from_lake / new_phase_len;
+    lock->results.discharge_from_sea = total_volume_from_sea / new_phase_len;
   } else {
     // TODO: Implement handling of last 'interval', see UNST-8169.
   }
