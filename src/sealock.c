@@ -102,7 +102,6 @@ static int sealock_update_current_row(sealock_state_t *lock, time_t time) {
     row++;
   }
   lock->current_row = row ? row - 1 : 0;
-  // BUG: doesn't return 1 then called for the first time.
   return lock->current_row != previous_row;
 }
 
@@ -145,6 +144,7 @@ static int sealock_phase_results_to_results(sealock_state_t* lock) {
 static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, time_t time, time_t duration,
                                                       zsf_results_t *previous) {
   time_t phase_start = lock->times[lock->current_row];
+  time_t phase_end = phase_start + duration;
   time_t skipped_time = time - phase_start;
   time_t new_phase_len = duration - skipped_time;
 
@@ -157,7 +157,7 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     return SEALOCK_OK;
   }
 
-  if (lock->current_row + 1 < lock->times_len) {
+  if (time <= phase_end) {
     // Calculate (corrected) volume, salt mass and resulting salinity for lake and sea.
     double new_volume_to_lake = lock->results.discharge_to_lake * new_phase_len;
     double missing_volume_to_lake =
@@ -201,9 +201,27 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     lock->results.discharge_from_lake = total_volume_from_lake / new_phase_len;
     lock->results.discharge_from_sea = total_volume_from_sea / new_phase_len;
   } else {
-    time_t dimr_interval = 60; // TODO: Check what is meant here and get is as a parameter.
-    lock->results.discharge_to_lake *= new_phase_len / dimr_interval;
-    lock->results.discharge_to_sea *= new_phase_len / dimr_interval;
+    // We should only get here if we ran out of rows in the timeline.
+    assert(time > phase_end);
+    assert(lock->current_row == lock->times_len - 1);
+    assert(lock->phase_args.time == time);
+
+    // We are beyond the loaded timeline, apply correction for one step beyond ...
+    time_t dimr_interval = lock->phase_args.time_step;
+    time_t prev_time = time - dimr_interval;
+    if (prev_time < phase_end) {
+      lock->results.discharge_to_lake *= new_phase_len / dimr_interval;
+      lock->results.discharge_to_sea *= new_phase_len / dimr_interval;
+      lock->results.discharge_from_lake *= new_phase_len / dimr_interval;
+      lock->results.discharge_from_sea *= new_phase_len / dimr_interval;
+    } else {
+      lock->results.discharge_to_lake = 0;
+      lock->results.discharge_to_sea = 0;
+      lock->results.salinity_to_lake = 0;
+      lock->results.salinity_to_sea = 0;
+      lock->results.discharge_from_lake = 0;
+      lock->results.discharge_from_sea = 0;
+    }
   }
 
   return SEALOCK_OK;
@@ -215,10 +233,13 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
   if (sealock_update_current_row(lock, time)) {
     status = get_csv_row_data(&lock->timeseries_data, lock->current_row, &row_data);
     if (status == SEALOCK_OK) {
+      time_t prev_time = lock->phase_args.time;
       lock->phase_args = PHASE_WISE_CLEAR_ARGS();
       // copy relevant args to lock.
       lock->phase_args.run_update = 1;
       lock->phase_args.routine = row_data.routine;
+      lock->phase_args.time = time;
+      lock->phase_args.time_step = time - prev_time;
       lock->parameters.density_current_factor_sea = row_data.density_current_factor_sea;
       lock->parameters.density_current_factor_lake = row_data.density_current_factor_lake;
       lock->parameters.ship_volume_sea_to_lake = 0;

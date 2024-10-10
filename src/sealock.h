@@ -25,6 +25,8 @@ typedef enum zsf_computation_mode_enum {
 typedef struct zsf_phase_wise_args_struct {
   int run_update;
   int routine;
+  time_t time;      // current time
+  time_t time_step; // time step taken from previous time to current time
   double t_level;
   double t_open_lake;
   double t_open_sea;
@@ -33,8 +35,8 @@ typedef struct zsf_phase_wise_args_struct {
 
 #define PHASE_WISE_CLEAR_ARGS()                                                                    \
   (zsf_phase_wise_args_t) {                                                                        \
-    .run_update = 0, .routine = 0, .t_level = 0, .t_open_lake = 0, .t_open_sea = 0,                \
-    .t_flushing = 0                                                                                \
+    .run_update = 0, .routine = 0, .time = 0, .time_step = 0, .t_level = 0, .t_open_lake = 0,      \
+    .t_open_sea = 0, .t_flushing = 0                                                               \
   }
 
 #define MAX_NUM_VOLUMES 50
