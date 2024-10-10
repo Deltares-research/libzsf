@@ -6,3 +6,6 @@ dist
 .idea
 .ipynb_checkpoints
 .vscode
+
+# Generated files
+wrappers/git_describe.txt

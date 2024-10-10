@@ -1,0 +1,106 @@
+
+
+#ifndef SEALOCK_H
+#define SEALOCK_H
+
+#include "csv/load_csv.h"
+#include "zsf.h"
+#include "io_layer_distribution.h"
+#include <time.h>
+
+#define SEALOCK_OK (0)
+#define SEALOCK_ERROR (-1)
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+typedef int sealock_index_t;
+
+typedef enum zsf_computation_mode_enum {
+  cycle_average_mode = 0,
+  phase_wise_mode
+} zsf_computation_mode_t;
+
+typedef struct zsf_phase_wise_args_struct {
+  int run_update;
+  int routine;
+  time_t time;      // current time
+  time_t time_step; // time step taken from previous time to current time
+  double t_level;
+  double t_open_lake;
+  double t_open_sea;
+  double t_flushing;
+} zsf_phase_wise_args_t;
+
+#define PHASE_WISE_CLEAR_ARGS()                                                                    \
+  (zsf_phase_wise_args_t) {                                                                        \
+    .run_update = 0, .routine = 0, .time = 0, .time_step = 0, .t_level = 0, .t_open_lake = 0,      \
+    .t_open_sea = 0, .t_flushing = 0                                                               \
+  }
+
+#define MAX_NUM_VOLUMES 50
+#define NO_CURRENT_ROW (size_t)(-1)
+
+typedef struct dfm_volumes_struct {
+  // input from fdm
+  double volumes[MAX_NUM_VOLUMES];
+  // determined from volumes
+  unsigned num_active_cells;
+  unsigned first_active_cell;
+} dfm_volumes_t;
+
+typedef struct dfm_parameters3d_struct {
+  double salinity_lake[MAX_NUM_VOLUMES];
+  double salinity_sea[MAX_NUM_VOLUMES];
+} dfm_parameters3d_t;
+
+typedef struct dfm_results3d_struct {
+  // determined from results
+  double mass_transport_lake[MAX_NUM_VOLUMES];
+  double salt_load_lake[MAX_NUM_VOLUMES];
+  double discharge_from_lake[MAX_NUM_VOLUMES];
+  double discharge_to_lake[MAX_NUM_VOLUMES];
+  double salinity_to_lake[MAX_NUM_VOLUMES];
+  double mass_transport_sea[MAX_NUM_VOLUMES];
+  double salt_load_sea[MAX_NUM_VOLUMES];
+  double discharge_from_sea[MAX_NUM_VOLUMES];
+  double discharge_to_sea[MAX_NUM_VOLUMES];
+  double salinity_to_sea[MAX_NUM_VOLUMES];
+} dfm_results3d_t;
+
+typedef struct sealock_state_struct {
+  char *id;
+  // ZSF
+  zsf_param_t parameters;
+  zsf_phase_wise_args_t phase_args;
+  zsf_phase_state_t phase_state;
+  zsf_phase_transports_t phase_results;
+  zsf_results_t results;
+  zsf_aux_results_t aux_results;
+  zsf_computation_mode_t computation_mode;
+  // Cycle average
+  char *operational_parameters_file;
+  csv_context_t timeseries_data;
+  size_t current_row;
+  time_t *times;
+  size_t times_len;
+  profile_t flow_profile;
+  dfm_volumes_t lake_volumes;
+  dfm_volumes_t sea_volumes;
+  dfm_parameters3d_t parameters3d;
+  dfm_results3d_t results3d;
+} sealock_state_t;
+
+int sealock_defaults(sealock_state_t *lock);
+int sealock_init(sealock_state_t *lock, time_t start_time);
+int sealock_load_timeseries(sealock_state_t *lock, char *filepath);
+int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time);
+int sealock_update(sealock_state_t *lock, time_t time);
+int sealock_delta_time_ok(sealock_state_t *lock, time_t delta_time);
+
+#if defined(__cplusplus)
+}
+#endif
+
+#endif // SEALOCK_H

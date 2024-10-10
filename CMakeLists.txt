@@ -54,27 +54,54 @@ if(USE_FAST_TANH)
     add_definitions(-DZSF_USE_FAST_TANH)
 endif()
 
+set(ZSF_SOURCE_FILES
+    include/zsf.h
+    src/zsf.c
+    src/dimr_bmi.c
+    src/dimr_bmi.h
+    src/io_layer_distribution.c
+    src/io_layer_distribution.h
+    src/csv/load_csv.c
+    src/csv/load_csv.h
+    src/load_time_averaged.h
+    src/load_time_averaged.c
+    src/load_phase_wise.h
+    src/load_phase_wise.c
+    src/sealock.h
+    src/sealock.c
+    src/timestamp.h
+    src/timestamp.c
+    src/ini/ini_read.h
+    src/ini/ini_read.c
+    src/zsf_config.h
+    src/zsf_config.c
+)
+
 ##############################################################################
 ################################## Targets ###################################
 ##############################################################################
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-add_library(zsf SHARED src/zsf.c)
+add_library(zsf SHARED ${ZSF_SOURCE_FILES})
 
 set_target_properties (zsf PROPERTIES
     DEFINE_SYMBOL "ZSF_EXPORTS"
     OUTPUT_NAME "zsf"
     PUBLIC_HEADER "include/zsf.h"
+    C_STANDARD 23
 )
 
-add_library(zsf-static STATIC src/zsf.c)
+add_library(zsf-static STATIC ${ZSF_SOURCE_FILES})
 
 set_target_properties(zsf-static PROPERTIES
     COMPILE_DEFINITIONS "ZSF_STATIC"
     OUTPUT_NAME "zsf-static"
     PUBLIC_HEADER "include/zsf.h"
     POSITION_INDEPENDENT_CODE ON
+    C_STANDARD 23
 )
+
+target_include_directories(zsf-static INTERFACE src)
 
 set(INSTALL_TARGETS zsf zsf-static)
 
@@ -82,17 +109,23 @@ set(INSTALL_TARGETS zsf zsf-static)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     # 64 bits - do nothing. 64 bits office can just use the regular dll
 elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-    add_library(zsf-stdcall SHARED src/zsf.c)
+    add_library(zsf-stdcall SHARED ${ZSF_SOURCE_FILES})
 
     set_target_properties (zsf-stdcall PROPERTIES
         DEFINE_SYMBOL "ZSF_EXPORTS"
         COMPILE_DEFINITIONS "ZSF_USE_STDCALL"
         OUTPUT_NAME "zsf-stdcall"
         PUBLIC_HEADER "include/zsf.h"
+        C_STANDARD 23
     )
 
     set(INSTALL_TARGETS ${INSTALL_TARGETS} zsf-stdcall)
 endif()
+
+add_subdirectory(src/unity)
+
+# Unit tests
+add_subdirectory(tests)
 
 install(
     TARGETS
