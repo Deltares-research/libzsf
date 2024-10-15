@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
@@ -120,6 +121,8 @@ static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
   if (status == SEALOCK_OK) {
     lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
     lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
+  } else {
+    printf("ZSF: zsf_calc_steady(..) returned %d!\n", status);
   }
 
   return status;
@@ -309,6 +312,12 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
     }
     if (status == SEALOCK_OK) {
       status = sealock_phase_results_to_results(lock);
+    } else {
+      if (lock->phase_args.routine > 0) {
+        printf("ZSF: zsf_step_phase_%d(..) returned %d!\n", lock->phase_args.routine, status);
+      } else if (lock->phase_args.routine < 0) {
+        printf("ZSF: zsf_step_flush_doors_closed(..) returned %d!\n", status);
+      }
     }
     if (status == SEALOCK_OK) {
       status = sealock_apply_phase_wise_result_correction(lock, time, duration, &previous_step_results);
