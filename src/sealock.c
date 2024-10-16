@@ -350,6 +350,8 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   unsigned amount = 0;
   unsigned first = 0;
   unsigned last = MAX_NUM_VOLUMES-1;
+  double total_volume = 0.0;
+  unsigned index = 0;
   while (first < MAX_NUM_VOLUMES && volumes->volumes[first] <= 0) {
     first++;
   }
@@ -361,6 +363,16 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   }
   volumes->num_active_cells = amount;
   volumes->first_active_cell = first;
+  // calculate normalized volumes
+  for (index = first; index < first+amount; index++) {
+    total_volume += volumes->volumes[index];
+  }
+  printf(  "DEBUG ZSF: total_volume   = %g\n", total_volume);
+  for (index = first; index < first + amount; index++) {
+    volumes->normalized[index] = volumes->volumes[index] / total_volume;
+    printf("DEBUG ZSF: volumes   [%d] = %g\n", index, volumes->volumes[index]);
+    printf("DEBUG ZSF: normalized[%d] = %g\n", index, volumes->volumes[index] / total_volume);
+  }
 }
 
 // Determine the number and start of active layers.
@@ -382,7 +394,7 @@ static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) {
   int last = first + volumes->num_active_cells - 1;
 
   for (int i = first; i <= last; i++) {
-    aggregate += buffer_ptr[i]; // TODO: Check if we need * volumes->volumes[i] here?
+    aggregate += buffer_ptr[i]; // TODO: Check if we need * volumes->volumes[i] or normalized[i] here?
   }
 
   return aggregate;
@@ -393,6 +405,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   dfm_volumes_t *lake_volumes, *sea_volumes;
 
   assert(lock);
+  sealock_get_active_layers(lock);
 
   lake_volumes = &lock->lake_volumes;
   sea_volumes = &lock->sea_volumes;
@@ -417,7 +430,7 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
 
   first_active = volumes->first_active_cell;
   layers.number_of_layers = volumes->num_active_cells;
-  layers.normalized_target_volumes = volumes->volumes;
+  layers.normalized_target_volumes = volumes->normalized;
   result.number_of_layers = layers.number_of_layers;
   result.discharge_per_layer = &buffer_ptr[first_active];
 
