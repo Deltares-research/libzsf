@@ -46,6 +46,7 @@ typedef struct dfm_volumes_struct {
   // input from fdm
   double volumes[MAX_NUM_VOLUMES];
   // determined from volumes
+  double normalized[MAX_NUM_VOLUMES];
   unsigned num_active_cells;
   unsigned first_active_cell;
 } dfm_volumes_t;
