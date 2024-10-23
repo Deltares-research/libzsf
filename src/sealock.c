@@ -14,9 +14,11 @@ int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
   zsf_param_default(&lock->parameters);
   // Set up default volumes/profile for '2D' case.
+  lock->lake_volumes.num_volumes = 1;
   lock->lake_volumes.volumes[0] = 1.0;
   lock->lake_volumes.first_active_cell = 0;
   lock->lake_volumes.num_active_cells = 1;
+  lock->sea_volumes.num_volumes = 1;
   lock->sea_volumes.volumes[0] = 1.0;
   lock->sea_volumes.first_active_cell = 0;
   lock->sea_volumes.num_active_cells = 1;
@@ -24,8 +26,12 @@ int sealock_defaults(sealock_state_t* lock) {
 }
 
 
-int sealock_init(sealock_state_t* lock, time_t start_time) {
+int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_z_layers) {
   int status = SEALOCK_OK;
+
+  // Set number of DFM volumes.
+  lock->lake_volumes.num_volumes = max_num_z_layers;
+  lock->sea_volumes.num_volumes = max_num_z_layers;
 
   // Load timeseries data when required.
   if (status == SEALOCK_OK && lock->operational_parameters_file) {
@@ -349,10 +355,10 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   // Determine amount of active volumes.
   unsigned amount = 0;
   unsigned first = 0;
-  unsigned last = MAX_NUM_VOLUMES-1;
+  unsigned last = volumes->num_volumes-1;
   double total_volume = 0.0;
   unsigned index = 0;
-  while (first < MAX_NUM_VOLUMES && volumes->volumes[first] <= 0) {
+  while (first < volumes->num_volumes && volumes->volumes[first] <= 0) {
     first++;
   }
   while (last > 0 && volumes->volumes[last] <= 0) {

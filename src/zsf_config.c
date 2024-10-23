@@ -91,6 +91,11 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
       } else {
         status = INI_FAIL;
       }
+    } else if (!strcmp(key, "kmx")) {
+      config_ptr->max_num_z_layers = ini_parse_int(value, &status);
+      if (config_ptr->max_num_z_layers < 1 || config_ptr->max_num_z_layers > MAX_NUM_VOLUMES) {
+        status = INI_FAIL;
+      }
     }
   }
 
@@ -101,6 +106,7 @@ int zsf_config_load(zsf_config_t *config_ptr, const char *filepath) {
   assert(config_ptr);
   assert(filepath);
   config_ptr->num_locks = 0;
+  config_ptr->max_num_z_layers = 1;
   config_ptr->start_time = 0.0;
   config_ptr->end_time = 0.0;
   config_ptr->current_time = 0.0;
