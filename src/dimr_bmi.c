@@ -33,7 +33,7 @@ int initialize(const char *config_file) {
     return DIMR_BMI_FAILURE;
 
   for (sealock_index_t lock_index = 0; lock_index < config.num_locks && !status; lock_index++) {
-    status = sealock_init(&config.locks[lock_index], config.start_time);
+    status = sealock_init(&config.locks[lock_index], config.start_time, config.max_num_z_layers);
   }
 
   return zsf_to_dimr_status(status);
@@ -98,6 +98,7 @@ int set_var(const char *key, void *src_ptr) {
   char keystr[BMI_MAX_VAR_NAME + 1];
   sealock_index_t lock_index = 0;
   double *dest_ptr = NULL;
+  size_t dest_len = 1;
   char *quantity = NULL;
   char *vartype = NULL;
   char *lock_id = NULL;
@@ -133,8 +134,10 @@ int set_var(const char *key, void *src_ptr) {
     dest_ptr = &config.locks[lock_index].parameters.head_sea;
   } else if (match_key(quantity, "water_volume_lake")) {
     dest_ptr = config.locks[lock_index].lake_volumes.volumes;
+    dest_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "water_volume_sea")) {
     dest_ptr = config.locks[lock_index].sea_volumes.volumes;
+    dest_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "temperature_lake")) {
     dest_ptr = &config.locks[lock_index].parameters.temperature_lake;
   } else if (match_key(quantity, "temperature_sea")) {
@@ -149,7 +152,7 @@ int set_var(const char *key, void *src_ptr) {
   printf("ZSF: %s set value for %s to %g at %p.\n", __func__, quantity, *(double *)src_ptr,
          dest_ptr);
 #endif
-  *dest_ptr = *(double *)src_ptr;
+  memcpy(dest_ptr, src_ptr, dest_len * sizeof(double));
   return DIMR_BMI_OK;
 }
 
@@ -158,6 +161,7 @@ int set_var(const char *key, void *src_ptr) {
 int get_var(const char *key, void **dst_ptr) {
   sealock_index_t lock_index = 0;
   double *source_ptr = NULL;
+  size_t source_len = 1;
   char *quantity = NULL;
   char *vartype = NULL;
   char *lock_id = NULL;
@@ -202,15 +206,17 @@ int get_var(const char *key, void **dst_ptr) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_sea;
   } else if (match_key(quantity, "volumes_in_lake")) {
     source_ptr = config.locks[lock_index].lake_volumes.volumes;
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "volumes_in_sea")) {
     source_ptr = config.locks[lock_index].sea_volumes.volumes;
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
   }
 
-  if (dst_ptr == NULL || source_ptr == NULL) {
+  if (dst_ptr == NULL || *dst_ptr == NULL || source_ptr == NULL) {
     return DIMR_BMI_FAILURE;
   }
 
-  *(double **)dst_ptr = source_ptr;
+  memcpy(*dst_ptr, source_ptr, source_len * sizeof(double));
 #if ZSF_VERBOSE
   printf("ZSF: %s yielded the value %g for quantity '%s' of lock %d.\n", __func__, *source_ptr,
          quantity, lock_index);

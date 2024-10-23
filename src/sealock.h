@@ -43,6 +43,8 @@ typedef struct zsf_phase_wise_args_struct {
 #define NO_CURRENT_ROW (size_t)(-1)
 
 typedef struct dfm_volumes_struct {
+  // configured
+  unsigned int num_volumes;
   // input from fdm
   double volumes[MAX_NUM_VOLUMES];
   // determined from volumes
@@ -94,7 +96,7 @@ typedef struct sealock_state_struct {
 } sealock_state_t;
 
 int sealock_defaults(sealock_state_t *lock);
-int sealock_init(sealock_state_t *lock, time_t start_time);
+int sealock_init(sealock_state_t *lock, time_t start_time, unsigned int max_num_z_layers);
 int sealock_load_timeseries(sealock_state_t *lock, char *filepath);
 int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time);
 int sealock_update(sealock_state_t *lock, time_t time);

@@ -13,6 +13,7 @@ extern "C" {
 typedef struct zsf_config_struct {
   sealock_state_t locks[ZSF_MAX_LOCKS];
   unsigned int num_locks;
+  unsigned int max_num_z_layers;
   time_t start_time;
   time_t current_time;
   time_t end_time;
