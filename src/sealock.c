@@ -36,7 +36,14 @@ int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_
   // Load timeseries data when required.
   if (status == SEALOCK_OK && lock->operational_parameters_file) {
     status = sealock_load_timeseries(lock, lock->operational_parameters_file);
+    if (status == SEALOCK_OK) {
+      if (lock->times[0] > start_time) {
+        printf("ZSF: Timeseries of lock '%s' starts after start_time! (%lld > %lld)\n", lock->id, lock->times[0], start_time);
+        status = SEALOCK_ERROR;
+      }
+    }
   }
+
 
   if (status == SEALOCK_OK) {
     // Do one update to properly populate all parameters from timeseries for current time.
