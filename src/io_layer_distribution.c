@@ -4,6 +4,9 @@
 #include <math.h>
 #include <stdlib.h>
 
+// DEBUG
+#include <stdio.h>
+
 void cleanup_profile(profile_t *profile) {
   if (profile == NULL) {
     return;
@@ -137,12 +140,23 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
   const double relative_discharge_total = integrate_piecewise_linear_profile(profile, 0.0, 1.0);
   double previous_volume = 0.0;
   double next_volume = 0.0;
+
+  printf("DEBUG ZSF: total=%g, rel_tot=%g\n", total_discharge, relative_discharge_total);
+  printf("DEBUG ZSF: num_layers=%d\n", layers->number_of_layers);
   for (int layer = 0; layer < layers->number_of_layers; ++layer) {
+    printf("DEBUG ZSF: normalized_layer_volume[%d]=%g\n", layer,
+           layers->normalized_target_volumes[layer]);
     next_volume += layers->normalized_target_volumes[layer];
     const double relative_discharge_layer =
         integrate_piecewise_linear_profile(profile, previous_volume, next_volume);
-    layered_discharge_result->discharge_per_layer[layer] =
-        relative_discharge_layer / relative_discharge_total * total_discharge;
+    double relative_fraction = relative_discharge_layer / relative_discharge_total;
+    printf("DEBUG ZSF: rel_tot=%g, rel_val=%g, rel_frc=%g\n", relative_discharge_total,
+           relative_discharge_layer, relative_fraction);
+    if (relative_fraction <= 0 && layers->number_of_layers > 1) {
+      relative_fraction = 0;
+    }
+    layered_discharge_result->discharge_per_layer[layer] = relative_fraction * total_discharge;
+    printf("DEBUG ZSF: layer[%d]=%g\n", layer, relative_fraction * total_discharge);
     previous_volume = next_volume;
   }
   return 0;

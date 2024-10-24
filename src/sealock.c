@@ -8,14 +8,17 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
   zsf_param_default(&lock->parameters);
   // Set up default volumes/profile for '2D' case.
+  lock->lake_volumes.num_volumes = 1;
   lock->lake_volumes.volumes[0] = 1.0;
   lock->lake_volumes.first_active_cell = 0;
   lock->lake_volumes.num_active_cells = 1;
+  lock->sea_volumes.num_volumes = 1;
   lock->sea_volumes.volumes[0] = 1.0;
   lock->sea_volumes.first_active_cell = 0;
   lock->sea_volumes.num_active_cells = 1;
@@ -23,13 +26,24 @@ int sealock_defaults(sealock_state_t* lock) {
 }
 
 
-int sealock_init(sealock_state_t* lock, time_t start_time) {
+int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_z_layers) {
   int status = SEALOCK_OK;
+
+  // Set number of DFM volumes.
+  lock->lake_volumes.num_volumes = max_num_z_layers;
+  lock->sea_volumes.num_volumes = max_num_z_layers;
 
   // Load timeseries data when required.
   if (status == SEALOCK_OK && lock->operational_parameters_file) {
     status = sealock_load_timeseries(lock, lock->operational_parameters_file);
+    if (status == SEALOCK_OK) {
+      if (lock->times[0] > start_time) {
+        printf("ZSF: Timeseries of lock '%s' starts after start_time! (%lld > %lld)\n", lock->id, lock->times[0], start_time);
+        status = SEALOCK_ERROR;
+      }
+    }
   }
+
 
   if (status == SEALOCK_OK) {
     // Do one update to properly populate all parameters from timeseries for current time.
@@ -120,6 +134,8 @@ static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
   if (status == SEALOCK_OK) {
     lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
     lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
+  } else {
+    printf("ZSF: zsf_calc_steady(..) returned %d!\n", status);
   }
 
   return status;
@@ -309,6 +325,12 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
     }
     if (status == SEALOCK_OK) {
       status = sealock_phase_results_to_results(lock);
+    } else {
+      if (lock->phase_args.routine > 0) {
+        printf("ZSF: zsf_step_phase_%d(..) returned %d!\n", lock->phase_args.routine, status);
+      } else if (lock->phase_args.routine < 0) {
+        printf("ZSF: zsf_step_flush_doors_closed(..) returned %d!\n", status);
+      }
     }
     if (status == SEALOCK_OK) {
       status = sealock_apply_phase_wise_result_correction(lock, time, duration, &previous_step_results);
@@ -340,8 +362,10 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   // Determine amount of active volumes.
   unsigned amount = 0;
   unsigned first = 0;
-  unsigned last = MAX_NUM_VOLUMES-1;
-  while (first < MAX_NUM_VOLUMES && volumes->volumes[first] <= 0) {
+  unsigned last = volumes->num_volumes-1;
+  double total_volume = 0.0;
+  unsigned index = 0;
+  while (first < volumes->num_volumes && volumes->volumes[first] <= 0) {
     first++;
   }
   while (last > 0 && volumes->volumes[last] <= 0) {
@@ -352,6 +376,16 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   }
   volumes->num_active_cells = amount;
   volumes->first_active_cell = first;
+  // calculate normalized volumes
+  for (index = first; index < first+amount; index++) {
+    total_volume += volumes->volumes[index];
+  }
+  printf(  "DEBUG ZSF: total_volume   = %g\n", total_volume);
+  for (index = first; index < first + amount; index++) {
+    volumes->normalized[index] = volumes->volumes[index] / total_volume;
+    printf("DEBUG ZSF: volumes   [%d] = %g\n", index, volumes->volumes[index]);
+    printf("DEBUG ZSF: normalized[%d] = %g\n", index, volumes->volumes[index] / total_volume);
+  }
 }
 
 // Determine the number and start of active layers.
@@ -373,7 +407,7 @@ static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) {
   int last = first + volumes->num_active_cells - 1;
 
   for (int i = first; i <= last; i++) {
-    aggregate += buffer_ptr[i]; // TODO: Check if we need * volumes->volumes[i] here?
+    aggregate += buffer_ptr[i]; // TODO: Check if we need * volumes->volumes[i] or normalized[i] here?
   }
 
   return aggregate;
@@ -384,6 +418,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   dfm_volumes_t *lake_volumes, *sea_volumes;
 
   assert(lock);
+  sealock_get_active_layers(lock);
 
   lake_volumes = &lock->lake_volumes;
   sea_volumes = &lock->sea_volumes;
@@ -408,7 +443,7 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
 
   first_active = volumes->first_active_cell;
   layers.number_of_layers = volumes->num_active_cells;
-  layers.normalized_target_volumes = volumes->volumes;
+  layers.normalized_target_volumes = volumes->normalized;
   result.number_of_layers = layers.number_of_layers;
   result.discharge_per_layer = &buffer_ptr[first_active];
 
