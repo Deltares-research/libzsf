@@ -69,6 +69,10 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
         config_ptr->locks[lock_index].flow_profile.number_of_positions = array_length;
         config_ptr->locks[lock_index].flow_profile.relative_discharge_from_lock = value_array;
         config_ptr->locks[lock_index].flow_profile.relative_z_position = linear_z_positions;
+        if (io_normalize_profile(&config_ptr->locks[lock_index].flow_profile) != 0) {
+          cleanup_profile(&config_ptr->locks[lock_index].flow_profile);
+          status = INI_FAIL;
+        }
       } else {
         free(value_array);
         status = INI_FAIL;

@@ -43,6 +43,8 @@ int io_layer_init_2d(profile_t *profile);
 
 void cleanup_layered_discharge(layered_discharge_t *layered_discharge);
 
+int io_normalize_profile(profile_t *profile);
+
 double integrate_piecewise_linear_profile(const profile_t *profile, const double lower_bound,
                                           const double upper_bound);
 

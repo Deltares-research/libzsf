@@ -20,7 +20,7 @@ static int create_linear_profile(profile_t *profile, const int number_of_positio
   }
 
   const double slope = (discharge_1 - discharge_0) / 1.0;
-  const double z_step = 1.0 / (number_of_positions - 1);
+  const double z_step = 1.0 / (number_of_positions - 1.0);
 
   for (int i = 0; i < number_of_positions; ++i) {
     const double z = z_step * i;
@@ -128,6 +128,19 @@ static void test_distribute_over_two_layers(void) {
   cleanup_layers(&two_layers);
 }
 
+static void test_normalize_profile() {
+  // Create a non-normalized profile.
+  const double left_profile_value = -4.0;
+  const double right_profile_value = 4.0;
+  profile_t linear_profile = profile_default;
+  TEST_ASSERT_EQUAL(0,
+      create_linear_profile(&linear_profile, 10, left_profile_value, right_profile_value));
+  TEST_ASSERT_EQUAL(0, io_normalize_profile(&linear_profile));
+  TEST_ASSERT_DOUBLE_WITHIN(epsilon,-2.0, linear_profile.relative_discharge_from_lock[0]);
+  TEST_ASSERT_DOUBLE_WITHIN(epsilon, 2.0, linear_profile.relative_discharge_from_lock[9]);
+  cleanup_profile(&linear_profile);
+}
+
 int main(void) {
   UNITY_BEGIN();
 
@@ -135,6 +148,7 @@ int main(void) {
   RUN_TEST(test_integrate_to_edges);
   RUN_TEST(test_integrate_linear_profile);
   RUN_TEST(test_distribute_over_two_layers);
+  RUN_TEST(test_normalize_profile);
 
   return UNITY_END();
 }
