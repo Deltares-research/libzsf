@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <float.h>
 
 int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
@@ -365,7 +366,7 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   unsigned last = volumes->num_volumes-1;
   double total_volume = 0.0;
   unsigned index = 0;
-  while (first < volumes->num_volumes && volumes->volumes[first] <= 0) {
+  while (first < volumes->num_volumes && volumes->volumes[first] <= DBL_EPSILON) {
     first++;
   }
   while (last > 0 && volumes->volumes[last] <= 0) {
