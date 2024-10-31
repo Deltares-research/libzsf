@@ -34,7 +34,7 @@ void cleanup_layered_discharge(layered_discharge_t *layered_discharge) {
 // Generate a default array linear z positions for supplied number_of_layers.
 // Returns pointer to allocated array of doubles.
 // Note: Caller is responsible to deallocating the created array.
-double* io_layer_linear_z_positions(const int number_of_layers) {
+double *io_layer_linear_z_positions(const int number_of_layers) {
   double *linear_z_positions = NULL;
   if (number_of_layers > 0) {
     linear_z_positions = calloc(number_of_layers, sizeof(double));
@@ -50,7 +50,8 @@ double* io_layer_linear_z_positions(const int number_of_layers) {
 
 // Set up a default '2D' profile
 #define IO_2D_PROFILE_SIZE (2)
-#define IO_2D_PROFILE() { 1.0, 1.0 }
+#define IO_2D_PROFILE()                                                                            \
+  { 1.0, 1.0 }
 int io_layer_init_2d(profile_t *profile) {
   int array_length = 0;
   double default_values[IO_2D_PROFILE_SIZE] = IO_2D_PROFILE();
@@ -59,8 +60,8 @@ int io_layer_init_2d(profile_t *profile) {
   if (value_array && linear_z_positions) {
     memcpy(value_array, default_values, sizeof(double) * IO_2D_PROFILE_SIZE);
     *profile = (profile_t){.number_of_positions = IO_2D_PROFILE_SIZE,
-                .relative_discharge_from_lock = value_array,
-                .relative_z_position = linear_z_positions};
+                           .relative_discharge_from_lock = value_array,
+                           .relative_z_position = linear_z_positions};
   } else {
     free(value_array);
     free(linear_z_positions);
@@ -69,15 +70,14 @@ int io_layer_init_2d(profile_t *profile) {
   return 0;
 }
 
-
 // Normalize profile.
 // 1. Detect if there is a positive and negative lobe. (S-curve)
 // 2. If there's not exactly one zero crossing, we throw an error.
 // 3. Normalize of each lobe such that they integrate to +1 for positive or -1 for negative.
 int io_normalize_profile(profile_t *profile) {
   int max_index = profile->number_of_positions - 1;
-  int index_above_zero = max_index;
-  int index_below_zero = 0;
+  int index_after_zero = max_index;
+  int index_before_zero = 0;
   double z_start = profile->relative_z_position[0];
   double z_end = profile->relative_z_position[max_index];
   double z_zero = -1.0;
@@ -86,68 +86,61 @@ int io_normalize_profile(profile_t *profile) {
 
   if (start_sign == end_sign || start_sign == 0 || end_sign == 0) {
     // Profile has invalid shape (not exactly one zero in interval interior)
-    printf("ZSF: Invalid profile shape!\n");
+    printf("ZSF: Invalid profile shape! (Start and end should differ in sign)\n");
     return -1;
   }
   // Find z_zero.
-  while (index_below_zero < max_index &&
-         fsign(profile->relative_discharge_from_lock[index_below_zero + 1]) == start_sign) {
-    ++index_below_zero;
+  while (index_before_zero < max_index &&
+         fsign(profile->relative_discharge_from_lock[index_before_zero + 1]) == start_sign) {
+    ++index_before_zero;
   }
-  while (index_above_zero > 0 &&
-         fsign(profile->relative_discharge_from_lock[index_above_zero - 1]) == end_sign) {
-    --index_above_zero;
+  while (index_after_zero > 0 &&
+         fsign(profile->relative_discharge_from_lock[index_after_zero - 1]) == end_sign) {
+    --index_after_zero;
   }
 
-  if (index_above_zero != index_below_zero + 1) {
+  if (index_after_zero != index_before_zero + 1) {
     // Error if there's not exactly one index between positive and negative.
-    if (index_above_zero - index_below_zero - 1 != 1) {
-      printf("ZSF: Too many zeroes in profile? (index_above_zero=%d, index_below_zero=%d.)\n", index_above_zero,
-             index_below_zero);
+    if (index_after_zero - index_before_zero > 2) {
+      printf("ZSF: Invalid profile shape! Too many zero entries in profile?\n     "
+             "(index_before_zero=%d "
+             "and index_before_zero=%d differ by more than 2.)\n",
+             index_after_zero, index_before_zero);
       return -1;
     }
-    // Error if that value is not zero.
-    if (fabs(profile->relative_discharge_from_lock[index_below_zero + 1]) > DBL_EPSILON) {
-      printf("ZSF: Zero in profile not zero?\n");
-      return -1;
-    }
-    z_zero = profile->relative_z_position[index_below_zero + 1];
+    // Assert that we have indeed found a single 'zero' profile entry.
+    assert(fabs(profile->relative_discharge_from_lock[index_before_zero + 1]) <= DBL_EPSILON);
+    z_zero = profile->relative_z_position[index_before_zero + 1];
   } else {
     // Find z_zero position by linear interpolation.
-    const double z_below = profile->relative_z_position[index_below_zero];
-    const double z_above = profile->relative_z_position[index_above_zero];
-    const double p_below = profile->relative_discharge_from_lock[index_below_zero];
-    const double p_above = profile->relative_discharge_from_lock[index_above_zero];
-    z_zero = z_below - p_below * (z_above - z_below) / (p_above - p_below);
+    const double z_before = profile->relative_z_position[index_before_zero];
+    const double z_after = profile->relative_z_position[index_after_zero];
+    const double p_before = profile->relative_discharge_from_lock[index_before_zero];
+    const double p_after = profile->relative_discharge_from_lock[index_after_zero];
+    z_zero = z_before - p_before * (z_after - z_before) / (p_after - p_before);
   }
-
-  printf("DEBUG ZSF: index_above_zero=%d, index_below_zero=%d.\n", index_above_zero, index_below_zero);
-  printf("DEBUG ZSF: z_start = %g\n", z_start);
-  printf("DEBUG ZSF: z_zero  = %g\n", z_zero);
-  printf("DEBUG ZSF: z_end   = %g\n", z_end);
 
   // Integrate top.
-  const double integral_below = fabs(integrate_piecewise_linear_profile(profile, z_start, z_zero));
+  const double integral_before = fabs(integrate_piecewise_linear_profile(profile, z_start, z_zero));
   // Integrate bottom.
-  const double integral_above = fabs(integrate_piecewise_linear_profile(profile, z_zero, z_end));
+  const double integral_after = fabs(integrate_piecewise_linear_profile(profile, z_zero, z_end));
 
-  // Calculate correction factor.
-  assert(integral_below > DBL_EPSILON);
-  assert(integral_above > DBL_EPSILON);
-  const double correction_factor_below = (z_zero - z_start) / integral_below;
-  const double correction_factor_above = (z_end - z_zero) / integral_above;
+  // Calculate correction factors.
+  assert(integral_before > DBL_EPSILON);
+  assert(integral_after > DBL_EPSILON);
+  const double correction_factor_before = (z_zero - z_start) / integral_before;
+  const double correction_factor_after = (z_end - z_zero) / integral_after;
 
   // Normalize profile discharges
-  for (int i = 0; i <= index_below_zero; i++) {
-    profile->relative_discharge_from_lock[i] *= correction_factor_below;
+  for (int i = 0; i <= index_before_zero; i++) {
+    profile->relative_discharge_from_lock[i] *= correction_factor_before;
   }
-  for (int i = index_above_zero; i <= max_index; i++) {
-    profile->relative_discharge_from_lock[i] *= correction_factor_above;
+  for (int i = index_after_zero; i <= max_index; i++) {
+    profile->relative_discharge_from_lock[i] *= correction_factor_after;
   }
 
   return 0;
 }
-
 
 // Integrate relative_discharge_from_lock(x) with x from 0 to 1, assuming that relative_z_position[0] == 0 and relative_z_position[number_of_positions - 1] == 1.
 // Further, the profile is assumed to be piecewise linear, and is a linear interpolation between the given relative_z_positions.
