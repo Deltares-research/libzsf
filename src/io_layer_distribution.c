@@ -103,7 +103,7 @@ int io_normalize_profile(profile_t *profile) {
     // Error if there's not exactly one index between positive and negative.
     if (index_after_zero - index_before_zero > 2) {
       printf("ZSF: Invalid profile shape! Too many zero entries in profile?\n     "
-             "(index_before_zero=%d "
+             "(index_after_zero=%d "
              "and index_before_zero=%d differ by more than 2.)\n",
              index_after_zero, index_before_zero);
       return -1;
