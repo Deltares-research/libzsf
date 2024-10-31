@@ -69,6 +69,9 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
         config_ptr->locks[lock_index].flow_profile.number_of_positions = array_length;
         config_ptr->locks[lock_index].flow_profile.relative_discharge_from_lock = value_array;
         config_ptr->locks[lock_index].flow_profile.relative_z_position = linear_z_positions;
+        // Normalize profile to ensure positive and negative parts each integrate to unity.
+        // Only profiles with a single zero(-crossing) are supported. Non-conforming
+        // profiles will result in an error.
         if (io_normalize_profile(&config_ptr->locks[lock_index].flow_profile) != 0) {
           cleanup_profile(&config_ptr->locks[lock_index].flow_profile);
           status = INI_FAIL;
