@@ -212,11 +212,11 @@ int get_var(const char *key, void **dst_ptr) {
     source_len = config.locks[lock_index].sea_volumes.num_volumes;
   }
 
-  if (dst_ptr == NULL || *dst_ptr == NULL || source_ptr == NULL) {
-    return DIMR_BMI_FAILURE;
+  if (dst_ptr == NULL || source_ptr == NULL) {
+      return DIMR_BMI_FAILURE;
   }
 
-  memcpy(*dst_ptr, source_ptr, source_len * sizeof(double));
+  *(double **)dst_ptr = source_ptr;
 #if ZSF_VERBOSE
   printf("ZSF: %s yielded the value %g for quantity '%s' of lock %d.\n", __func__, *source_ptr,
          quantity, lock_index);
