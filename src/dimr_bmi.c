@@ -126,10 +126,12 @@ int set_var(const char *key, void *src_ptr) {
   // Set dest_ptr for intended lock and quantity.
   if (match_key(quantity, "salinity_lake")) {
     dest_ptr = config.locks[lock_index].parameters3d.salinity_lake;
+    dest_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "head_lake")) {
     dest_ptr = &config.locks[lock_index].parameters.head_lake;
   } else if (match_key(quantity, "salinity_sea")) {
     dest_ptr = config.locks[lock_index].parameters3d.salinity_sea;
+    dest_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "head_sea")) {
     dest_ptr = &config.locks[lock_index].parameters.head_sea;
   } else if (match_key(quantity, "water_volume_lake")) {
@@ -186,24 +188,34 @@ int get_var(const char *key, void **dst_ptr) {
   // Set source based on key(s)...
   if (match_key(quantity, "mass_transport_lake")) {
     source_ptr = config.locks[lock_index].results3d.mass_transport_lake;
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "salt_load_lake")) {
     source_ptr = config.locks[lock_index].results3d.salt_load_lake;
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_from_lake")) {
     source_ptr = config.locks[lock_index].results3d.discharge_from_lake;
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_to_lake")) {
     source_ptr = config.locks[lock_index].results3d.discharge_to_lake;
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_lake")) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_lake;
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
   } else if (match_key(quantity, "mass_transport_sea")) {
     source_ptr = config.locks[lock_index].results3d.mass_transport_sea;
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "salt_load_sea")) {
     source_ptr = config.locks[lock_index].results3d.salt_load_sea;
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_from_sea")) {
     source_ptr = config.locks[lock_index].results3d.discharge_from_sea;
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_to_sea")) {
     source_ptr = config.locks[lock_index].results3d.discharge_to_sea;
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_sea")) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_sea;
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else if (match_key(quantity, "volumes_in_lake")) {
     source_ptr = config.locks[lock_index].lake_volumes.volumes;
     source_len = config.locks[lock_index].lake_volumes.num_volumes;
@@ -230,7 +242,7 @@ int get_value_ptr(char *key, void **dst_ptr) {
   printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
 #endif
 
-  return DIMR_BMI_OK;
+  return DIMR_BMI_FAILURE;
 }
 
 // Exported
@@ -270,12 +282,12 @@ int update(double dt) {
   return status;
 }
 
-int get_var_shape(char *key, int *dims) { // dims -> int[6]
+int get_var_shape(char *key, int dims[6]) { // dims -> int[6]
 #if ZSF_VERBOSE
   printf("ZSF: %s( \"%s\", %d ) called.\n", __func__, key, *dims);
 #endif
   // TODO: Implement me?
-  return DIMR_BMI_OK;
+  return DIMR_BMI_FAILURE;
 }
 
 /* Not needed? (also mostly not BMI standard) */
