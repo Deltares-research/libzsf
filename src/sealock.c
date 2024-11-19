@@ -39,7 +39,7 @@ int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_
     status = sealock_load_timeseries(lock, lock->operational_parameters_file);
     if (status == SEALOCK_OK) {
       if (lock->times[0] > start_time) {
-        printf("ZSF: Timeseries of lock '%s' starts after start_time! (%lld > %lld)\n", lock->id, lock->times[0], start_time);
+        log_error("Timeseries of lock '%s' starts after start_time! (%lld > %lld)\n", lock->id, lock->times[0], start_time);
         status = SEALOCK_ERROR;
       }
     }
@@ -136,7 +136,7 @@ static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
     lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
     lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
   } else {
-    printf("ZSF: zsf_calc_steady(..) returned %d!\n", status);
+    log_error("zsf_calc_steady(..) returned %d!\n", status);
   }
 
   return status;
@@ -328,9 +328,9 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
       status = sealock_phase_results_to_results(lock);
     } else {
       if (lock->phase_args.routine > 0) {
-        printf("ZSF: zsf_step_phase_%d(..) returned %d!\n", lock->phase_args.routine, status);
+        log_error("zsf_step_phase_%d(..) returned %d!\n", lock->phase_args.routine, status);
       } else if (lock->phase_args.routine < 0) {
-        printf("ZSF: zsf_step_flush_doors_closed(..) returned %d!\n", status);
+        log_error("zsf_step_flush_doors_closed(..) returned %d!\n", status);
       }
     }
     if (status == SEALOCK_OK) {
@@ -381,11 +381,11 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   for (index = first; index < first+amount; index++) {
     total_volume += volumes->volumes[index];
   }
-  printf(  "DEBUG ZSF: total_volume   = %g\n", total_volume);
+  log_debug("total_volume   = %g\n", total_volume);
   for (index = first; index < first + amount; index++) {
     volumes->normalized[index] = volumes->volumes[index] / total_volume;
-    printf("DEBUG ZSF: volumes   [%d] = %g\n", index, volumes->volumes[index]);
-    printf("DEBUG ZSF: normalized[%d] = %g\n", index, volumes->volumes[index] / total_volume);
+    log_debug("volumes   [%d] = %g\n", index, volumes->volumes[index]);
+    log_debug("normalized[%d] = %g\n", index, volumes->volumes[index] / total_volume);
   }
 }
 

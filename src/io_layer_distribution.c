@@ -4,8 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-// DEBUG
-#include <stdio.h>
+#include "log/log.h"
 
 inline const int fsign(const double x) { return (x > 0) - (x < 0); }
 
@@ -86,7 +85,7 @@ int io_normalize_profile(profile_t *profile) {
 
   if (start_sign == end_sign || start_sign == 0 || end_sign == 0) {
     // Profile has invalid shape (not exactly one zero in interval interior)
-    printf("ZSF: Invalid profile shape! (Start and end should differ in sign)\n");
+    log_error("Invalid profile shape! (Start and end should differ in sign)\n");
     return -1;
   }
   // Find z_zero.
@@ -102,10 +101,10 @@ int io_normalize_profile(profile_t *profile) {
   if (index_after_zero != index_before_zero + 1) {
     // Error if there's not exactly one index between positive and negative.
     if (index_after_zero - index_before_zero > 2) {
-      printf("ZSF: Invalid profile shape! Too many zero entries in profile?\n     "
-             "(index_after_zero=%d "
-             "and index_before_zero=%d differ by more than 2.)\n",
-             index_after_zero, index_before_zero);
+      log_error("ZSF: Invalid profile shape! Too many zero entries in profile?\n     "
+                "(index_after_zero=%d "
+                "and index_before_zero=%d differ by more than 2.)\n",
+                index_after_zero, index_before_zero);
       return -1;
     }
     // Assert that we have indeed found a single 'zero' profile entry.
@@ -125,9 +124,9 @@ int io_normalize_profile(profile_t *profile) {
   // Integrate bottom.
   const double integral_after = fabs(integrate_piecewise_linear_profile(profile, z_zero, z_end));
 
-  printf("DEBUG ZSF: raw profile.\n");
-  printf("DEBUG ZSF: before = %g\n", integral_before);
-  printf("DEBUG ZSF: after  = %g\n", integral_after);
+  log_debug("raw profile.\n");
+  log_debug("before = %g\n", integral_before);
+  log_debug("after  = %g\n", integral_after);
 
   // Calculate correction factors.
   assert(integral_before > DBL_EPSILON);
@@ -144,13 +143,15 @@ int io_normalize_profile(profile_t *profile) {
   }
 
   // Integrate top.
-  const double check_integral_before = fabs(integrate_piecewise_linear_profile(profile, z_start, z_zero));
+  const double check_integral_before =
+      fabs(integrate_piecewise_linear_profile(profile, z_start, z_zero));
   // Integrate bottom.
-  const double check_integral_after = fabs(integrate_piecewise_linear_profile(profile, z_zero, z_end));
+  const double check_integral_after =
+      fabs(integrate_piecewise_linear_profile(profile, z_zero, z_end));
 
-  printf("DEBUG ZSF: normalized profile.\n");
-  printf("DEBUG ZSF: before = %g\n", check_integral_before);
-  printf("DEBUG ZSF: after  = %g\n", check_integral_after);
+  log_debug("normalized profile.\n");
+  log_debug("before = %g\n", check_integral_before);
+  log_debug("after  = %g\n", check_integral_after);
 
   return 0;
 }
@@ -227,26 +228,25 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
   double next_volume = 0.0;
   double profile_integral = 0;
 
-  printf("DEBUG ZSF: total=%g\n", total_discharge);
-  printf("DEBUG ZSF: num_layers=%d\n", layers->number_of_layers);
+  log_debug("total=%g\n", total_discharge);
+  log_debug("num_layers=%d\n", layers->number_of_layers);
   for (int layer = 0; layer < layers->number_of_layers; ++layer) {
-    printf("DEBUG ZSF: normalized_layer_volume[%d] = %g\n", layer,
-            layers->normalized_target_volumes[layer]);
+    log_debug("normalized_layer_volume[%d] = %g\n", layer,
+           layers->normalized_target_volumes[layer]);
     next_volume += layers->normalized_target_volumes[layer];
     const double relative_discharge_layer =
         integrate_piecewise_linear_profile(profile, previous_volume, next_volume);
-    printf("DEBUG ZSF: profile_layer_volume   [%d] = %g\n", layer,
-            relative_discharge_layer);
+    log_debug("profile_layer_volume   [%d] = %g\n", layer, relative_discharge_layer);
     double layer_discharge = 0;
     if (relative_discharge_layer * total_discharge > 0 || layers->number_of_layers == 1) {
       layer_discharge = fabs(relative_discharge_layer) * total_discharge;
       profile_integral += relative_discharge_layer;
     }
     layered_discharge_result->discharge_per_layer[layer] = layer_discharge;
-    printf("DEBUG ZSF: layer_discharge        [%d] = %g (= %g * %g)\n", layer, layer_discharge,
-           relative_discharge_layer, total_discharge);
+    log_debug("layer_discharge        [%d] = %g (?= %g * %g)\n", layer, layer_discharge,
+           fabs(relative_discharge_layer), total_discharge);
     previous_volume = next_volume;
   }
-  printf("DEBUG ZSF: profile integral = %g\n", profile_integral);
+  log_debug("profile integral = %g\n", profile_integral);
   return 0;
 }

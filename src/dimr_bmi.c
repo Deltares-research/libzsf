@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "log/log.h"
 #include "zsf_config.h"
 
-#define ZSF_VERBOSE 1
 const char *zsf_key_separator = "/";
 static inline int zsf_to_dimr_status(int s) { return ((s) == 0 ? DIMR_BMI_OK : DIMR_BMI_FAILURE); }
 
@@ -19,10 +19,9 @@ zsf_config_t config;
 // Exported
 int initialize(const char *config_file) {
   int status = 0;
-
-#if ZSF_VERBOSE
-  printf("ZSF: %s( \"%s\" ) called.\n", __func__, config_file);
-#endif
+  log_init("ZSF", stderr);
+  log_set_level(logDEBUG);
+  log_info("%s( \"%s\" ) called.\n", __func__, config_file);
 
   // Read ini file.
   status = zsf_config_load(&config, config_file);
@@ -41,9 +40,7 @@ int initialize(const char *config_file) {
 
 // Exported
 int finalize() {
-#if ZSF_VERBOSE
-  printf("ZSF: %s() called.\n", __func__);
-#endif
+  log_info("%s() called.\n", __func__);
   zsf_config_unload(&config);
   return DIMR_BMI_OK; // Should always return DIMR_BMI_OK
 }
@@ -103,9 +100,7 @@ int set_var(const char *key, void *src_ptr) {
   char *vartype = NULL;
   char *lock_id = NULL;
 
-#if ZSF_VERBOSE
-  printf("ZSF: %s( \"%s\", *src_ptr = %g) called.\n", __func__, key, *(double *)src_ptr);
-#endif
+  log_info("%s( \"%s\", *src_ptr = %g) called.\n", __func__, key, *(double *)src_ptr);
 
   copy_key(key, keystr);
   if (parse_key(keystr, &vartype, &lock_id, &quantity) != DIMR_BMI_OK) {
@@ -119,9 +114,7 @@ int set_var(const char *key, void *src_ptr) {
     }
   }
 
-#if ZSF_VERBOSE
-  printf("ZSF: %s: lock_index = %d, quantity = %s\n", __func__, lock_index, quantity);
-#endif
+  log_info("%s: lock_index = %d, quantity = %s\n", __func__, lock_index, quantity);
 
   // Set dest_ptr for intended lock and quantity.
   if (match_key(quantity, "salinity_lake")) {
@@ -150,10 +143,8 @@ int set_var(const char *key, void *src_ptr) {
     return DIMR_BMI_FAILURE;
   }
 
-#if ZSF_VERBOSE
-  printf("ZSF: %s set value for %s to %g at %p.\n", __func__, quantity, *(double *)src_ptr,
+  log_info("%s set value for %s to %g at %p.\n", __func__, quantity, *(double *)src_ptr,
          dest_ptr);
-#endif
   memcpy(dest_ptr, src_ptr, dest_len * sizeof(double));
   return DIMR_BMI_OK;
 }
@@ -169,9 +160,7 @@ int get_var(const char *key, void **dst_ptr) {
   char *lock_id = NULL;
   char keystr[BMI_MAX_VAR_NAME + 1];
 
-#if ZSF_VERBOSE
-  printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
-#endif
+  log_info("%s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
 
   copy_key(key, keystr);
   if (parse_key(keystr, &vartype, &lock_id, &quantity) != DIMR_BMI_OK) {
@@ -229,19 +218,14 @@ int get_var(const char *key, void **dst_ptr) {
   }
 
   *(double **)dst_ptr = source_ptr;
-#if ZSF_VERBOSE
-  printf("ZSF: %s yielded the value %g for quantity '%s' of lock %d.\n", __func__, *source_ptr,
+  log_info("%s yielded the value %g for quantity '%s' of lock %d.\n", __func__, *source_ptr,
          quantity, lock_index);
-#endif
   return DIMR_BMI_OK;
 }
 
 // In DIMR **dst_ptr always is a double.
 int get_value_ptr(char *key, void **dst_ptr) {
-#if ZSF_VERBOSE
-  printf("ZSF: %s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
-#endif
-
+  log_info("%s( \"%s\", %p ) called.\n", __func__, key, dst_ptr);
   return DIMR_BMI_FAILURE;
 }
 
@@ -254,9 +238,7 @@ int update(double dt) {
   time_t delta_time = (time_t)dt;
   time_t new_time = config.current_time + delta_time;
 
-#if ZSF_VERBOSE
-  printf("ZSF: %s( %g ) called.\n", __func__, dt);
-#endif
+  log_info("%s( %g ) called.\n", __func__, dt);
 
   if(dt < 0) {
     return DIMR_BMI_FAILURE;
@@ -283,9 +265,7 @@ int update(double dt) {
 }
 
 int get_var_shape(char *key, int dims[6]) { // dims -> int[6]
-#if ZSF_VERBOSE
-  printf("ZSF: %s( \"%s\", %d ) called.\n", __func__, key, *dims);
-#endif
+  log_info("%s( \"%s\", %d ) called.\n", __func__, key, *dims);
   // TODO: Implement me?
   return DIMR_BMI_FAILURE;
 }
@@ -305,33 +285,25 @@ void get_attribute(char *name, char *value) {
 
 // Exported
 void get_start_time(double *start_time_ptr) {
-#if ZSF_VERBOSE
-  printf("ZSF: %s( %g ) called.\n", __func__, *start_time_ptr);
-#endif
+  log_info("%s( %g ) called.\n", __func__, *start_time_ptr);
   *start_time_ptr = time_to_timestamp(config.start_time);
 }
 
 // Exported
 void get_end_time(double *end_time_ptr) {
-#if ZSF_VERBOSE
-  printf("ZSF: %s( %g ) called.\n", __func__, *end_time_ptr);
-#endif
+  log_info("%s( %g ) called.\n", __func__, *end_time_ptr);
   *end_time_ptr = time_to_timestamp(config.end_time);
 }
 
 // Exported
 void get_time_step(double *time_step_ptr) {
-#if ZSF_VERBOSE
-  printf("ZSF: %s( %g ) called.\n", __func__, *time_step_ptr);
-#endif
+  log_info("%s( %g ) called.\n", __func__, *time_step_ptr);
   // TODO: Implement me
 }
 
 // Exported
 void get_current_time(double *current_time_ptr) {
-#if ZSF_VERBOSE
-  printf("ZSF: %s( %g ) called.\n", __func__, *current_time_ptr);
-#endif
+  log_info("%s( %g ) called.\n", __func__, *current_time_ptr);
   *current_time_ptr = time_to_timestamp(config.current_time);
 }
 
