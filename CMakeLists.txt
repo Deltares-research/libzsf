@@ -75,6 +75,8 @@ set(ZSF_SOURCE_FILES
     src/ini/ini_read.c
     src/zsf_config.h
     src/zsf_config.c
+    src/log/log.h
+    src/log/log.c
 )
 
 ##############################################################################
