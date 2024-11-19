@@ -101,7 +101,7 @@ int io_normalize_profile(profile_t *profile) {
   if (index_after_zero != index_before_zero + 1) {
     // Error if there's not exactly one index between positive and negative.
     if (index_after_zero - index_before_zero > 2) {
-      log_error("ZSF: Invalid profile shape! Too many zero entries in profile?\n     "
+      log_error("Invalid profile shape! Too many zero entries in profile?\n     "
                 "(index_after_zero=%d "
                 "and index_before_zero=%d differ by more than 2.)\n",
                 index_after_zero, index_before_zero);
@@ -232,7 +232,7 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
   log_debug("num_layers=%d\n", layers->number_of_layers);
   for (int layer = 0; layer < layers->number_of_layers; ++layer) {
     log_debug("normalized_layer_volume[%d] = %g\n", layer,
-           layers->normalized_target_volumes[layer]);
+              layers->normalized_target_volumes[layer]);
     next_volume += layers->normalized_target_volumes[layer];
     const double relative_discharge_layer =
         integrate_piecewise_linear_profile(profile, previous_volume, next_volume);
@@ -244,7 +244,7 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
     }
     layered_discharge_result->discharge_per_layer[layer] = layer_discharge;
     log_debug("layer_discharge        [%d] = %g (?= %g * %g)\n", layer, layer_discharge,
-           fabs(relative_discharge_layer), total_discharge);
+              fabs(relative_discharge_layer), total_discharge);
     previous_volume = next_volume;
   }
   log_debug("profile integral = %g\n", profile_integral);
