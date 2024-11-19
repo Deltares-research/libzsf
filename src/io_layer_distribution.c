@@ -238,7 +238,7 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
     printf("DEBUG ZSF: profile_layer_volume   [%d] = %g\n", layer,
             relative_discharge_layer);
     double layer_discharge = 0;
-    if (relative_discharge_layer * total_discharge > 0) {
+    if (relative_discharge_layer * total_discharge > 0 || layers->number_of_layers == 1) {
       layer_discharge = fabs(relative_discharge_layer) * total_discharge;
       profile_integral += relative_discharge_layer;
     }
