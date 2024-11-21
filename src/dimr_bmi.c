@@ -137,13 +137,16 @@ int set_var(const char *key, void *src_ptr) {
     dest_ptr = &config.locks[lock_index].parameters.temperature_lake;
   } else if (match_key(quantity, "temperature_sea")) {
     dest_ptr = &config.locks[lock_index].parameters.temperature_sea;
+  } else {
+    log_warning("Unhandled set_var('%s', %g)\n", key, *(double*)src_ptr);
+    return DIMR_BMI_OK;
   }
 
   if (src_ptr == NULL || dest_ptr == NULL) {
     return DIMR_BMI_FAILURE;
   }
 
-  log_info("%s set value for %s to %g at %p.\n", __func__, quantity, *(double *)src_ptr,
+  log_info("%s set value for %s to %g at %p.\n", __func__, quantity, *(double*)src_ptr,
          dest_ptr);
   memcpy(dest_ptr, src_ptr, dest_len * sizeof(double));
   return DIMR_BMI_OK;
@@ -205,12 +208,21 @@ int get_var(const char *key, void **dst_ptr) {
   } else if (match_key(quantity, "salinity_to_sea")) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_sea;
     source_len = config.locks[lock_index].sea_volumes.num_volumes;
-  } else if (match_key(quantity, "volumes_in_lake")) {
+  } else if (match_key(quantity, "water_volume_lake")) {
     source_ptr = config.locks[lock_index].lake_volumes.volumes;
     source_len = config.locks[lock_index].lake_volumes.num_volumes;
-  } else if (match_key(quantity, "volumes_in_sea")) {
+  } else if (match_key(quantity, "water_volume_sea")) {
     source_ptr = config.locks[lock_index].sea_volumes.volumes;
     source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "salinity_sea")) {
+    // NOTE: This is really a GET_VALUE_PTR(), called before the update.
+    source_ptr = config.locks[lock_index].parameters3d.salinity_sea;
+  } else if (match_key(quantity, "salinity_lake")) {
+    // NOTE: This is really a GET_VALUE_PTR(), called before ethe update.
+    source_ptr = config.locks[lock_index].parameters3d.salinity_lake;
+  } else {
+    log_warning("Unhandled get_var('%s', @%p)\n", key, dst_ptr);
+    return DIMR_BMI_FAILURE;
   }
 
   if (dst_ptr == NULL || source_ptr == NULL) {
@@ -218,7 +230,7 @@ int get_var(const char *key, void **dst_ptr) {
   }
 
   *(double **)dst_ptr = source_ptr;
-  log_info("%s yielded the value %g for quantity '%s' of lock %d.\n", __func__, *source_ptr,
+  log_info("%s yielded %p (value = %g) for quantity '%s' of lock %d.\n", __func__, source_ptr, *source_ptr,
          quantity, lock_index);
   return DIMR_BMI_OK;
 }
@@ -265,9 +277,61 @@ int update(double dt) {
 }
 
 int get_var_shape(char *key, int dims[6]) { // dims -> int[6]
-  log_info("%s( \"%s\", %d ) called.\n", __func__, key, *dims);
-  // TODO: Implement me?
-  return DIMR_BMI_FAILURE;
+  sealock_index_t lock_index = 0;
+  size_t source_len = 1;
+  char *quantity = NULL;
+  char *vartype = NULL;
+  char *lock_id = NULL;
+  char keystr[BMI_MAX_VAR_NAME + 1];
+
+  log_info("%s( \"%s\", %p ) called.\n", __func__, key, dims);
+
+  copy_key(key, keystr);
+  if (parse_key(keystr, &vartype, &lock_id, &quantity) != DIMR_BMI_OK) {
+    return DIMR_BMI_FAILURE;
+  }
+
+  if (lock_id) {
+    lock_index = zsf_config_get_lock_index(&config, lock_id);
+    if (lock_index < 0) {
+      return DIMR_BMI_FAILURE;
+    }
+  }
+
+  // Set source based on key(s)...
+  if (match_key(quantity, "mass_transport_lake")) {
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+  } else if (match_key(quantity, "salt_load_lake")) {
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+  } else if (match_key(quantity, "discharge_from_lake")) {
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+  } else if (match_key(quantity, "discharge_to_lake")) {
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+  } else if (match_key(quantity, "salinity_to_lake")) {
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+  } else if (match_key(quantity, "mass_transport_sea")) {
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "salt_load_sea")) {
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "discharge_from_sea")) {
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "discharge_to_sea")) {
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "salinity_to_sea")) {
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_lake")) {
+    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_sea")) {
+    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else {
+    log_warning("Unhandled get_var('%s', @%p)\n", key, dims);
+    source_len = 1;
+  }
+
+  dims[0] = source_len;
+  log_info("%s yielded %d for quantity '%s' of lock %d.\n", __func__, source_len,
+           quantity, lock_index);
+  return DIMR_BMI_OK;
 }
 
 /* Not needed? (also mostly not BMI standard) */

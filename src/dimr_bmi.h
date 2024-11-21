@@ -26,7 +26,7 @@ ZSF_EXPORT int ZSF_CALLCONV set_var(const char *key, void *src_ptr); // In BMI 2
 ZSF_EXPORT int ZSF_CALLCONV get_var(const char *key, void *dst_ptr); // In BMI 2.0 = get_value
 int get_value_ptr(char *key, void **dst_ptr); // In DIMR **dst_ptr always is a double.
 ZSF_EXPORT int ZSF_CALLCONV update(double dt);
-int get_var_shape(char *key, int *dims); // dims -> int[6]
+ZSF_EXPORT int ZSF_CALLCONV get_var_shape(char *key, int *dims); // dims -> int[6]
 
 /* Not needed? (also mostly not BMI standard) */
 int update_until(double update_time);
