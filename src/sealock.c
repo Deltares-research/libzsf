@@ -136,7 +136,7 @@ static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
     lock->results.discharge_from_lake = -lock->results.discharge_from_lake;
     lock->results.discharge_from_sea = -lock->results.discharge_from_sea;
   } else {
-    log_error("zsf_calc_steady(..) returned %d!\n", status);
+    log_error("zsf_calc_steady(..) returned %d: %s!\n", status, zsf_error_msg(status));
   }
 
   return status;
@@ -328,9 +328,10 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
       status = sealock_phase_results_to_results(lock);
     } else {
       if (lock->phase_args.routine > 0) {
-        log_error("zsf_step_phase_%d(..) returned %d!\n", lock->phase_args.routine, status);
+        log_error("zsf_step_phase_%d(..) returned %d: %s!\n", lock->phase_args.routine, status,
+                  zsf_error_msg(status));
       } else if (lock->phase_args.routine < 0) {
-        log_error("zsf_step_flush_doors_closed(..) returned %d!\n", status);
+        log_error("zsf_step_flush_doors_closed(..) returned %d: %s!\n", status, zsf_error_msg(status));
       }
     }
     if (status == SEALOCK_OK) {
