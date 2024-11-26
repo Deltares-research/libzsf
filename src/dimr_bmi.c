@@ -276,7 +276,7 @@ int update(double dt) {
   return status;
 }
 
-int get_var_shape(char *key, int dims[6]) { // dims -> int[6]
+int get_var_shape(char *key, int dims[DIMR_BMI_MAXDIMS]) { // dims -> int[6]
   sealock_index_t lock_index = 0;
   size_t source_len = 1;
   char *quantity = NULL;
