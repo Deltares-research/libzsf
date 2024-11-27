@@ -399,7 +399,7 @@ void sealock_get_active_layers(sealock_state_t *lock) {
 }
 
 // Collect aggregate of quantity from dfm layer buffer into scalar.
-static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) { 
+static double sealock_collect(profile_t *profile, dfm_volumes_t *volumes, double* buffer_ptr) { 
   double aggregate = 0.0;
 
   assert(volumes);
@@ -407,10 +407,31 @@ static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) {
 
   int first = volumes->first_active_cell;
   int last = first + volumes->num_active_cells - 1;
+  double previous_volume = 0.0;
+  double next_volume = 0.0;
+  double used_volume = 0.0;
+  double used_fraction = 0.0;
 
   for (int i = first; i <= last; i++) {
-    aggregate += buffer_ptr[i]; // TODO: Check if we need * volumes->volumes[i] or normalized[i] here?
+    next_volume += volumes->normalized[i];
+    double fraction = -1.0 * integrate_piecewise_linear_profile(profile, previous_volume, next_volume);
+    log_debug("Layer %d, value = %g, volume = %g, profile fraction = %g\n", i, buffer_ptr[i], volumes->normalized[i], fraction);
+    if (fraction > 0) {
+      aggregate += buffer_ptr[i] * volumes->normalized[i] * fraction;
+      used_volume += volumes->normalized[i];
+      used_fraction += fraction;
+    }
+    previous_volume = next_volume;
   }
+
+  log_debug("Aggregate = %g\n", aggregate);
+  log_debug("Used volume = %g\n", used_volume);
+  log_debug("Used fraction = %g\n", used_fraction);
+  if (used_volume > DBL_EPSILON) {
+    aggregate /= used_volume;
+  }
+
+  log_debug("Volume adjusted aggregate = %g\n\n", aggregate);
 
   return aggregate;
 }
@@ -423,10 +444,22 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   sealock_get_active_layers(lock);
 
   lake_volumes = &lock->lake_volumes;
-  sea_volumes = &lock->sea_volumes;
+  if (lake_volumes->num_volumes == 1) {
+    lock->parameters.salinity_lake = lock->parameters3d.salinity_lake[lake_volumes->first_active_cell]; 
+  } else {
+    log_debug("Collecting salinity_lake from layers:\n");
+    lock->parameters.salinity_lake =
+        sealock_collect(&lock->flow_profile, lake_volumes, lock->parameters3d.salinity_lake);
+  }
 
-  lock->parameters.salinity_lake = sealock_collect(lake_volumes, lock->parameters3d.salinity_lake);
-  lock->parameters.salinity_sea = sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
+  sea_volumes = &lock->sea_volumes;
+  if (sea_volumes->num_volumes == 1) {
+    lock->parameters.salinity_sea = lock->parameters3d.salinity_sea[sea_volumes->first_active_cell];
+  } else {
+    log_debug("Collecting salinity_sea from layers:\n");
+    lock->parameters.salinity_sea =
+        sealock_collect(&lock->flow_profile, sea_volumes, lock->parameters3d.salinity_sea);
+  }
 
   return SEALOCK_OK;
 }
