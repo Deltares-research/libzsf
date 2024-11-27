@@ -98,18 +98,16 @@ int io_normalize_profile(profile_t *profile) {
     --index_after_zero;
   }
 
-  if (index_after_zero != index_before_zero + 1) {
-    // Error if there's not exactly one index between positive and negative.
-    if (index_after_zero - index_before_zero > 2) {
-      log_error("Invalid profile shape! Too many zero entries in profile?\n     "
-                "(index_after_zero=%d "
-                "and index_before_zero=%d differ by more than 2.)\n",
-                index_after_zero, index_before_zero);
-      return -1;
+  assert(index_after_zero > index_before_zero);
+
+  if (index_after_zero > index_before_zero + 1) {
+    for (int i = index_before_zero + 1; i < index_after_zero; i++) {
+      if (profile->relative_discharge_from_lock[i] > DBL_EPSILON) {
+        log_error("Invalid profile shape!\n");
+        return -1;
+      }
     }
-    // Assert that we have indeed found a single 'zero' profile entry.
-    assert(fabs(profile->relative_discharge_from_lock[index_before_zero + 1]) <= DBL_EPSILON);
-    z_zero = profile->relative_z_position[index_before_zero + 1];
+    z_zero = (profile->relative_z_position[index_before_zero + 1] + profile->relative_z_position[index_after_zero-1])/2;
   } else {
     // Find z_zero position by linear interpolation.
     const double z_before = profile->relative_z_position[index_before_zero];
@@ -228,8 +226,8 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
   double next_volume = 0.0;
   double profile_integral = 0;
 
-  log_debug("total=%g\n", total_discharge);
-  log_debug("num_layers=%d\n", layers->number_of_layers);
+  log_debug("total_discharge = %g\n", total_discharge);
+  log_debug("num_layers = %d\n", layers->number_of_layers);
   for (int layer = 0; layer < layers->number_of_layers; ++layer) {
     log_debug("normalized_layer_volume[%d] = %g\n", layer,
               layers->normalized_target_volumes[layer]);
@@ -247,6 +245,7 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
               fabs(relative_discharge_layer), total_discharge);
     previous_volume = next_volume;
   }
-  log_debug("profile integral = %g\n", profile_integral);
+  log_debug("profile integral = %g\n\n", profile_integral);
+  
   return 0;
 }
