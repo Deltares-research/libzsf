@@ -146,8 +146,12 @@ int set_var(const char *key, void *src_ptr) {
     return DIMR_BMI_FAILURE;
   }
 
-  log_info("%s set value for %s to %g at %p.\n", __func__, quantity, *(double*)src_ptr,
-         dest_ptr);
+  log_info("%s quantity = '%s', lock = %d, length = %d\n", __func__, quantity, lock_index,
+           dest_len);
+  for (int i = 0; i < dest_len; i++) {
+    log_info("%s value[%d] = %g\n", __func__, i, dest_ptr[i]);
+  }
+  
   memcpy(dest_ptr, src_ptr, dest_len * sizeof(double));
   return DIMR_BMI_OK;
 }
@@ -230,8 +234,11 @@ int get_var(const char *key, void **dst_ptr) {
   }
 
   *(double **)dst_ptr = source_ptr;
-  log_info("%s yielded %p (value = %g) for quantity '%s' of lock %d.\n", __func__, source_ptr, *source_ptr,
-         quantity, lock_index);
+  log_info("%s quantity = '%s', lock = %d, length = %d\n", __func__, quantity,
+           lock_index, source_len);
+  for (int i = 0; i < source_len; i++) {
+    log_info("%s value[%d] = %g\n", __func__, i, source_ptr[i]);
+  }
   return DIMR_BMI_OK;
 }
 

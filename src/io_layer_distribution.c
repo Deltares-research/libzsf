@@ -149,7 +149,7 @@ int io_normalize_profile(profile_t *profile) {
 
   log_debug("normalized profile.\n");
   log_debug("before = %g\n", check_integral_before);
-  log_debug("after  = %g\n", check_integral_after);
+  log_debug("after  = %g\n\n", check_integral_after);
 
   return 0;
 }
@@ -226,7 +226,7 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
   double next_volume = 0.0;
   double profile_integral = 0;
 
-  log_debug("total_discharge = %g\n", total_discharge);
+  log_debug("quantity total = %g\n", total_discharge);
   log_debug("num_layers = %d\n", layers->number_of_layers);
   for (int layer = 0; layer < layers->number_of_layers; ++layer) {
     log_debug("normalized_layer_volume[%d] = %g\n", layer,
@@ -241,11 +241,11 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
       profile_integral += relative_discharge_layer;
     }
     layered_discharge_result->discharge_per_layer[layer] = layer_discharge;
-    log_debug("layer_discharge        [%d] = %g (?= %g * %g)\n", layer, layer_discharge,
+    log_debug("layer quantity         [%d] = %g (?= %g * %g)\n", layer, layer_discharge,
               fabs(relative_discharge_layer), total_discharge);
     previous_volume = next_volume;
   }
-  log_debug("profile integral = %g\n\n", profile_integral);
+  log_debug("profile integral = %g (should be +/-1)\n\n", profile_integral);
   
   return 0;
 }

@@ -496,39 +496,53 @@ static int sealock_distribute_results(sealock_state_t *lock) {
   lake_volumes = &lock->lake_volumes;
   sea_volumes = &lock->sea_volumes;
 
+  log_debug("quantity = mass_transport_lake\n");
   if (sealock_distribute(lake_volumes, lake_profile, lock->results.mass_transport_lake, lock->results3d.mass_transport_lake) != 0) {
     return SEALOCK_ERROR;
   }
+  log_debug("quantity = salt_load_lake\n");
   if (sealock_distribute(lake_volumes, lake_profile, lock->results.salt_load_lake,
                          lock->results3d.salt_load_lake) != 0) {
     return SEALOCK_ERROR;
   }
+  log_debug("quantity = discharge_from_lake\n");
   if (sealock_distribute(lake_volumes, lake_profile, lock->results.discharge_from_lake,
                              lock->results3d.discharge_from_lake) != 0) {
     return SEALOCK_ERROR;
   }
+  log_debug("quantity = discharge_to_lake\n");
   if (sealock_distribute(lake_volumes, lake_profile, lock->results.discharge_to_lake,
                          lock->results3d.discharge_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
+  log_debug("quantity = salinity_to_lake\n");
   if (sealock_distribute(lake_volumes, lake_profile, lock->results.salinity_to_lake,
                          lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
+  log_debug("quantity = mass_transport_sea\n");
   if (sealock_distribute(sea_volumes, sea_profile, lock->results.mass_transport_sea,
                          lock->results3d.mass_transport_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salt_load_sea, lock->results3d.salt_load_sea) != 0) {
+  log_debug("quantity = salt_load_sea\n");
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salt_load_sea,
+                         lock->results3d.salt_load_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_from_sea, lock->results3d.discharge_from_sea) != 0) {
+  log_debug("quantity = discharge_from_sea\n");
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_from_sea,
+                         lock->results3d.discharge_from_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_to_sea, lock->results3d.discharge_to_sea) != 0) {
+  log_debug("quantity = discharge_to_sea\n");
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_to_sea,
+                         lock->results3d.discharge_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salinity_to_sea, lock->results3d.salinity_to_sea) != 0) {
+  log_debug("quantity = salinity_to_sea\n");
+  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salinity_to_sea,
+                         lock->results3d.salinity_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
   return SEALOCK_OK;
