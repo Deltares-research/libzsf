@@ -138,7 +138,7 @@ int set_var(const char *key, void *src_ptr) {
   } else if (match_key(quantity, "temperature_sea")) {
     dest_ptr = &config.locks[lock_index].parameters.temperature_sea;
   } else {
-    log_warning("Unhandled set_var('%s', %g)\n", key, *(double*)src_ptr);
+    log_debug("Unhandled set_var('%s', %g)\n", key, *(double*)src_ptr);
     return DIMR_BMI_OK;
   }
 
@@ -225,7 +225,7 @@ int get_var(const char *key, void **dst_ptr) {
     // NOTE: This is really a GET_VALUE_PTR(), called before ethe update.
     source_ptr = config.locks[lock_index].parameters3d.salinity_lake;
   } else {
-    log_warning("Unhandled get_var('%s', @%p)\n", key, dst_ptr);
+    log_debug("Unhandled get_var('%s', @%p)\n", key, dst_ptr);
     return DIMR_BMI_FAILURE;
   }
 
@@ -331,7 +331,7 @@ int get_var_shape(char *key, int dims[DIMR_BMI_MAXDIMS]) { // dims -> int[6]
   } else if (match_key(quantity, "water_volume_sea")) {
     source_len = config.locks[lock_index].sea_volumes.num_volumes;
   } else {
-    log_warning("Unhandled get_var('%s', @%p)\n", key, dims);
+    log_debug("Unhandled get_var('%s', @%p)\n", key, dims);
     source_len = 1;
   }
 
