@@ -171,20 +171,25 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
 
   if (skipped_time == 0) {
     // No correction required.
+    log_debug("%s: No correction required, skipped_time == %d\n", __func__, skipped_time);
     return SEALOCK_OK;
   }
 
+  log_debug("%s: time = %d, phase_end = %d, skipped_time = %d\n", __func__, time, phase_end, skipped_time);
   if (time <= phase_end) {
+    log_info("Correcting for change of phase.\n");
     // Calculate (corrected) volume, salt mass and resulting salinity for lake and sea.
     double new_volume_to_lake = lock->results.discharge_to_lake * new_phase_len;
     double missing_volume_to_lake =
         (lock->results.discharge_to_lake - previous->discharge_to_lake) * skipped_time;
     double total_volume_to_lake = new_volume_to_lake + missing_volume_to_lake;
+    log_debug("missing_volume_to_lake = %g\n", missing_volume_to_lake);
 
     double new_volume_to_sea = lock->results.discharge_to_sea * new_phase_len;
     double missing_volume_to_sea =
         (lock->results.discharge_to_sea - previous->discharge_to_sea) * skipped_time;
     double total_volume_to_sea = new_volume_to_sea + missing_volume_to_sea;
+    log_debug("missing_volume_to_sea = %g\n", missing_volume_to_sea);
 
     double new_salt_to_lake = lock->results.salinity_to_lake * new_volume_to_lake;
     double missing_salt_to_lake =
@@ -192,12 +197,14 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
          previous->salinity_to_lake * previous->discharge_to_lake) *
         skipped_time;
     double total_salt_to_lake = new_salt_to_lake + missing_salt_to_lake;
+    log_debug("missing_salt_to_lake = %g\n", missing_salt_to_lake);
 
     double new_salt_to_sea = lock->results.salinity_to_sea * new_volume_to_sea;
     double missing_salt_to_sea = (lock->results.salinity_to_sea * lock->results.discharge_to_sea -
                                   previous->salinity_to_sea * previous->discharge_to_sea) *
                                  skipped_time;
     double total_salt_to_sea = new_salt_to_sea + missing_salt_to_sea;
+    log_debug("missing_salt_to_sea = %g\n", missing_salt_to_sea);
 
     // Only do discharges 'from' lake and sea
     double new_volume_from_lake = lock->results.discharge_from_lake * new_phase_len;
@@ -211,13 +218,26 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     double total_volume_from_sea = new_volume_from_sea + missing_volume_from_sea;
 
     // Store corrected results
+    log_info("Applying correction to discharge_to_lake : %g -> %g\n",
+             lock->results.discharge_to_lake, total_volume_to_lake / new_phase_len);
     lock->results.discharge_to_lake = total_volume_to_lake / new_phase_len;
+    log_info("Applying correction to discharge_to_sea  : %g -> %g\n",
+             lock->results.discharge_to_sea, total_volume_to_sea / new_phase_len);
     lock->results.discharge_to_sea = total_volume_to_sea / new_phase_len;
+    log_info("Applying correction to salinity_to_lake  : %g -> %g\n",
+             lock->results.salinity_to_lake, total_salt_to_lake / total_volume_to_lake);
     lock->results.salinity_to_lake = total_salt_to_lake / total_volume_to_lake;
+    log_info("Applying correction to salinity_to_sea  : %g -> %g\n",
+             lock->results.salinity_to_sea, total_salt_to_sea / total_volume_to_sea);
     lock->results.salinity_to_sea = total_salt_to_sea / total_volume_to_sea;
+    log_info("Applying correction to discharge_from_lake : %g -> %g\n",
+             lock->results.discharge_from_lake, total_volume_from_lake / new_phase_len);
     lock->results.discharge_from_lake = total_volume_from_lake / new_phase_len;
+    log_info("Applying correction to discharge_from_sea  : %g -> %g\n",
+             lock->results.discharge_from_sea, total_volume_from_sea / new_phase_len);
     lock->results.discharge_from_sea = total_volume_from_sea / new_phase_len;
   } else {
+    log_info("Correcting for timeseries ending.\n");
     // We should only get here if we ran out of rows in the timeline.
     assert(time > phase_end);
     assert(lock->current_row == lock->times_len - 1);
@@ -227,11 +247,14 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     time_t dimr_interval = lock->phase_args.time_step;
     time_t prev_time = time - dimr_interval;
     if (prev_time < phase_end) {
+      log_info("Applying correction factor: %g / %g = %g\n", new_phase_len, dimr_interval,
+               new_phase_len / dimr_interval);
       lock->results.discharge_to_lake *= new_phase_len / dimr_interval;
       lock->results.discharge_to_sea *= new_phase_len / dimr_interval;
       lock->results.discharge_from_lake *= new_phase_len / dimr_interval;
       lock->results.discharge_from_sea *= new_phase_len / dimr_interval;
     } else {
+      log_info("Forcing output to zero.\n");
       lock->results.discharge_to_lake = 0;
       lock->results.discharge_to_sea = 0;
       lock->results.salinity_to_lake = 0;
@@ -290,8 +313,9 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
 static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
   time_t duration = 0;
-
+  log_debug("%s: Handling '%d' (run_update = %d)\n", lock->id, lock->phase_args.run_update);
   if (lock->phase_args.run_update) {
+    log_info("%s: Updating '%d' to phase %d.\n", lock->id, lock->phase_args.routine);
     zsf_results_t previous_step_results = lock->results;
     switch (lock->phase_args.routine) {
     case 1:
@@ -325,6 +349,7 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
       break;
     }
     if (status == SEALOCK_OK) {
+      log_debug("Status is OK. Converting results.\n");
       status = sealock_phase_results_to_results(lock);
     } else {
       if (lock->phase_args.routine > 0) {
@@ -335,7 +360,9 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
       }
     }
     if (status == SEALOCK_OK) {
-      status = sealock_apply_phase_wise_result_correction(lock, time, duration, &previous_step_results);
+      log_debug("Status is OK. Applying correction.\n");
+      status =
+          sealock_apply_phase_wise_result_correction(lock, time, duration, &previous_step_results);
     }
   }
 
