@@ -149,7 +149,7 @@ int set_var(const char *key, void *src_ptr) {
   log_info("%s quantity = '%s', lock = %d, length = %d\n", __func__, quantity, lock_index,
            dest_len);
   for (int i = 0; i < dest_len; i++) {
-    log_info("%s value[%d] = %g\n", __func__, i, dest_ptr[i]);
+    log_info("%s value[%d] = %g\n", __func__, i, ((double**)src_ptr)[i]);
   }
   
   memcpy(dest_ptr, src_ptr, dest_len * sizeof(double));
