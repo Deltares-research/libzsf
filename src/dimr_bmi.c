@@ -20,13 +20,14 @@ zsf_config_t config;
 int initialize(const char *config_file) {
   int status = 0;
   log_init("ZSF", stdout);
-  log_set_level(logDEBUG);
-  log_info("%s( \"%s\" ) called.\n", __func__, config_file);
 
   // Read ini file.
   status = zsf_config_load(&config, config_file);
   if (status)
     return zsf_to_dimr_status(status);
+ 
+  log_set_level(config.log_level);
+  log_info("%s( \"%s\" ) called.\n", __func__, config_file);
 
   if (!config.num_locks)
     return DIMR_BMI_FAILURE;

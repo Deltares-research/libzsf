@@ -24,6 +24,11 @@ void log_info(char *fmt, ...);
 void log_warning(char *fmt, ...);
 void log_error(char *fmt, ...);
 
+// parse level_str and return the associated log_level, or the default
+// when parsing fails.
+// Valid entries are: DEBUG, INFO, WARNING, ERROR.
+log_level_t log_level(char *level_str, log_level_t default_level);
+
 #if defined(__cplusplus)
 }
 #endif
