@@ -103,6 +103,9 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
       if (config_ptr->max_num_z_layers < 1 || config_ptr->max_num_z_layers > MAX_NUM_VOLUMES) {
         status = INI_FAIL;
       }
+    } else if (!strcmp(key, "log_level")) {
+      // Set new log level, or keep the default one already set.
+      config_ptr->log_level = log_level(value, config_ptr->log_level);
     }
   }
 
@@ -117,6 +120,7 @@ int zsf_config_load(zsf_config_t *config_ptr, const char *filepath) {
   config_ptr->start_time = 0.0;
   config_ptr->end_time = 0.0;
   config_ptr->current_time = 0.0;
+  config_ptr->log_level = logINFO;
   return ini_read(filepath, zsf_ini_handler, config_ptr);
 }
 

@@ -7,6 +7,7 @@ extern "C" {
 #  endif
 
 #  include "sealock.h"
+#  include "log/log.h"
 
 #  define ZSF_MAX_LOCKS 50
 
@@ -17,6 +18,7 @@ typedef struct zsf_config_struct {
   time_t start_time;
   time_t current_time;
   time_t end_time;
+  log_level_t log_level;
 } zsf_config_t;
 
 int zsf_config_load(zsf_config_t *config_ptr, const char *filepath);
