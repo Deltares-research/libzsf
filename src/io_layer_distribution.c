@@ -30,7 +30,7 @@ void cleanup_layered_discharge(layered_discharge_t *layered_discharge) {
   free(layered_discharge->discharge_per_layer);
 }
 
-// Generate a default array linear z positions for supplied number_of_layers.
+// Generate a default array linear relative_z positions for supplied number_of_layers.
 // Returns pointer to allocated array of doubles.
 // Note: Caller is responsible to deallocating the created array.
 double *io_layer_linear_z_positions(const int number_of_layers) {
@@ -139,6 +139,9 @@ int io_normalize_profile(profile_t *profile) {
   for (int i = index_after_zero; i <= max_index; i++) {
     profile->relative_discharge_from_lock[i] *= correction_factor_after;
   }
+  // Keep zero information.
+  profile->relative_z_zero = z_zero;
+  profile->start_sign = start_sign;
 
   // Integrate top.
   const double check_integral_before =
@@ -203,16 +206,16 @@ double integrate_piecewise_linear_profile(const profile_t *profile, const double
   return integrated_profile;
 }
 
-// Distribute the total_discharge over layers.
+// Distribute the total_quantity over layers.
 // The discharge that each layer receives is given by a relative profile
-int distribute_discharge_over_layers(double total_discharge, const profile_t *profile,
+int distribute_discharge_over_layers(double total_quantity, const profile_t *profile,
                                      const layers_t *layers,
-                                     layered_discharge_t *layered_discharge_result) {
+                                     layered_discharge_t *layered_quantity_result) {
   assert(layers != NULL);
   assert(layers->number_of_layers > 0);
-  assert(layered_discharge_result != NULL);
-  assert(layered_discharge_result->number_of_layers == layers->number_of_layers);
-  assert(layered_discharge_result->discharge_per_layer != NULL);
+  assert(layered_quantity_result != NULL);
+  assert(layered_quantity_result->number_of_layers == layers->number_of_layers);
+  assert(layered_quantity_result->discharge_per_layer != NULL);
   assert(profile->relative_z_position != NULL);
   assert(profile->relative_discharge_from_lock != NULL);
   assert(profile->number_of_positions > 0);
@@ -222,30 +225,48 @@ int distribute_discharge_over_layers(double total_discharge, const profile_t *pr
     return -1;
   }
 
-  double previous_volume = 0.0;
-  double next_volume = 0.0;
   double profile_integral = 0;
+  double relative_z_start = 0.0;
+  double relative_z_end = 1.0;
+  double relative_z_prev = 0.0;
+  double relative_z = 0.0;
 
-  log_debug("quantity total = %g\n", total_discharge);
-  log_debug("num_layers = %d\n", layers->number_of_layers);
-  for (int layer = 0; layer < layers->number_of_layers; ++layer) {
-    log_debug("normalized_layer_volume[%d] = %g\n", layer,
-              layers->normalized_target_volumes[layer]);
-    next_volume += layers->normalized_target_volumes[layer];
-    const double relative_discharge_layer =
-        integrate_piecewise_linear_profile(profile, previous_volume, next_volume);
-    log_debug("profile_layer_volume   [%d] = %g\n", layer, relative_discharge_layer);
-    double layer_discharge = 0;
-    if (relative_discharge_layer * total_discharge > 0 || layers->number_of_layers == 1) {
-      layer_discharge = fabs(relative_discharge_layer) * total_discharge;
-      profile_integral += relative_discharge_layer;
-    }
-    layered_discharge_result->discharge_per_layer[layer] = layer_discharge;
-    log_debug("layer quantity         [%d] = %g (?= %g * %g)\n", layer, layer_discharge,
-              fabs(relative_discharge_layer), total_discharge);
-    previous_volume = next_volume;
+  if (fsign(total_quantity) == profile->start_sign) {
+    relative_z_end = profile->relative_z_zero;
+  } else {
+    relative_z_start = profile->relative_z_zero;
   }
+
+  double relative_discharge_layer = 0.0;
+
+  log_debug("quantity total = %g\n", total_quantity);
+  log_debug("num_layers = %d\n", layers->number_of_layers);
+  if (layers->number_of_layers > 1) {
+    for (int layer = 0; layer < layers->number_of_layers; ++layer) {
+      relative_z += layers->normalized_target_volumes[layer];
+      if (relative_z < relative_z_start || relative_z_prev > relative_z_end) {
+        relative_discharge_layer = 0.0;
+      } else if (relative_z >= relative_z_start && relative_z_prev < relative_z_start) {
+        relative_discharge_layer = integrate_piecewise_linear_profile(profile, relative_z_start, relative_z);
+      } else if (relative_z > relative_z_end && relative_z_prev >= relative_z_start) {
+        relative_discharge_layer = integrate_piecewise_linear_profile(profile, relative_z_prev, relative_z_end);
+      } else {
+        relative_discharge_layer = integrate_piecewise_linear_profile(profile, relative_z_prev, relative_z);
+      }
+      const double layer_discharge = fabs(relative_discharge_layer) * total_quantity;
+      profile_integral += relative_discharge_layer;
+      layered_quantity_result->discharge_per_layer[layer] = layer_discharge;
+      log_debug("layer quantity         [%d] = %g (== %g * %g)\n", layer, layer_discharge,
+                fabs(relative_discharge_layer), total_quantity);
+      relative_z_prev = relative_z;
+    }
+  } else {
+    layered_quantity_result->discharge_per_layer[0] = total_quantity;
+    profile_integral = 1.0;
+    log_debug("layer quantity         [0] = %g (== 1.0 * %g)\n", total_quantity, total_quantity);
+  }
+
   log_debug("profile integral = %g (should be +/-1)\n\n", profile_integral);
-  
+
   return 0;
 }

@@ -13,8 +13,13 @@ static const struct profile_struct {
       relative_z_position; // Relative positions in the z-direction for which profile is provided (0 = bed level, 1 = water level)
   double *
       relative_discharge_from_lock; // Relative discharge at corresponding relative z-position (non-negative), need not be normalized
-} profile_default = {
-    .number_of_positions = 0, .relative_z_position = NULL, .relative_discharge_from_lock = NULL};
+  double relative_z_zero;
+  int start_sign;
+} profile_default = {.number_of_positions = 0,
+                     .relative_z_position = NULL,
+                     .relative_discharge_from_lock = NULL,
+                     .relative_z_zero = 1.0,
+                     .start_sign = 0};
 
 typedef struct profile_struct profile_t;
 
