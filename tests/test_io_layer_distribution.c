@@ -14,6 +14,12 @@ static int create_linear_profile(profile_t *profile, const int number_of_positio
   profile->number_of_positions = number_of_positions;
   profile->relative_z_position = malloc(number_of_positions * sizeof(double));
   profile->relative_discharge_from_lock = malloc(number_of_positions * sizeof(double));
+  profile->start_sign = discharge_0 < 0 ? -1 : 1;
+  if (discharge_0 * discharge_1 < 0) {
+    profile->relative_z_zero = discharge_0 / (discharge_0 - discharge_1);
+  } else {
+    profile->relative_z_zero = discharge_0 < 0 ? 0.0 : 1.0;
+  }
 
   if (profile->relative_z_position == NULL || profile->relative_discharge_from_lock == NULL) {
     return -1;
