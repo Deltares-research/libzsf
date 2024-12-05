@@ -437,7 +437,7 @@ static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) {
   double used_volume = 0.0;
 
   for (int i = first; i <= last; i++) {
-    log_debug("Layer %d, value = %g, volume = %g, profile fraction = %g\n", i, buffer_ptr[i], volumes->normalized[i]);
+    log_debug("Layer %d, value = %g, volume = %g\n", i, buffer_ptr[i], volumes->normalized[i]);
     aggregate += buffer_ptr[i] * volumes->normalized[i];
     used_volume += volumes->normalized[i];
   }
@@ -509,9 +509,11 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
     return distribute_discharge_over_layers(quantity, profile, &layers, &result);
   }
 
-  for (int i = 0; i < volumes->num_active_cells; i++) {
-    buffer_ptr[first_active + i] = quantity;
+  for (int layer = 0; layer < volumes->num_active_cells; layer++) {
+    buffer_ptr[first_active + layer] = quantity;
+    log_debug("layer quantity         [%d] = %g\n", layer, quantity);
   }
+  log_debug("(no profile was used)\n\n");
 
   return SEALOCK_OK;
 }
