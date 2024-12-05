@@ -426,7 +426,7 @@ void sealock_get_active_layers(sealock_state_t *lock) {
 }
 
 // Collect aggregate of quantity from dfm layer buffer into scalar.
-static double sealock_collect(profile_t *profile, dfm_volumes_t *volumes, double* buffer_ptr) { 
+static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) {
   double aggregate = 0.0;
 
   assert(volumes);
@@ -469,7 +469,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   } else {
     log_debug("Collecting salinity_lake from layers:\n");
     lock->parameters.salinity_lake =
-        sealock_collect(&lock->flow_profile, lake_volumes, lock->parameters3d.salinity_lake);
+        sealock_collect(lake_volumes, lock->parameters3d.salinity_lake);
   }
 
   sea_volumes = &lock->sea_volumes;
@@ -478,14 +478,16 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   } else {
     log_debug("Collecting salinity_sea from layers:\n");
     lock->parameters.salinity_sea =
-        sealock_collect(&lock->flow_profile, sea_volumes, lock->parameters3d.salinity_sea);
+        sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
   }
 
   return SEALOCK_OK;
 }
 
-// Distribute scalar quantity over layers into layer buffer.
-static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double quantity, double* buffer_ptr) {
+// Distribute scalar quantity over layers into layer buffer using a provided profile.
+// If no profile is provided (NULL), the quanity is simply duplicated.
+static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double quantity,
+                              double *buffer_ptr) {
   layers_t layers;
   layered_discharge_t result;
   unsigned first_active;
@@ -497,12 +499,21 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
   memset(buffer_ptr, 0, MAX_NUM_VOLUMES * sizeof(double));
 
   first_active = volumes->first_active_cell;
-  layers.number_of_layers = volumes->num_active_cells;
-  layers.normalized_target_volumes = volumes->normalized;
-  result.number_of_layers = layers.number_of_layers;
-  result.discharge_per_layer = &buffer_ptr[first_active];
 
-  return distribute_discharge_over_layers(quantity, profile, &layers, &result);
+  if (profile) {
+    layers.number_of_layers = volumes->num_active_cells;
+    layers.normalized_target_volumes = volumes->normalized;
+    result.number_of_layers = layers.number_of_layers;
+    result.discharge_per_layer = &buffer_ptr[first_active];
+
+    return distribute_discharge_over_layers(quantity, profile, &layers, &result);
+  }
+
+  for (int i = 0; i < volumes->num_active_cells; i++) {
+    buffer_ptr[first_active + i] = quantity;
+  }
+
+  return SEALOCK_OK;
 }
 
 static int sealock_distribute_results(sealock_state_t *lock) {
@@ -536,7 +547,7 @@ static int sealock_distribute_results(sealock_state_t *lock) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salinity_to_lake\n");
-  if (sealock_distribute(lake_volumes, lake_profile, lock->results.salinity_to_lake,
+  if (sealock_distribute(lake_volumes, NULL, lock->results.salinity_to_lake,
                          lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
@@ -561,7 +572,7 @@ static int sealock_distribute_results(sealock_state_t *lock) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salinity_to_sea\n");
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salinity_to_sea,
+  if (sealock_distribute(sea_volumes, NULL, lock->results.salinity_to_sea,
                          lock->results3d.salinity_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
