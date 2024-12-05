@@ -434,29 +434,16 @@ static double sealock_collect(profile_t *profile, dfm_volumes_t *volumes, double
 
   int first = volumes->first_active_cell;
   int last = first + volumes->num_active_cells - 1;
-  double previous_volume = 0.0;
-  double next_volume = 0.0;
   double used_volume = 0.0;
-  double used_fraction = 0.0;
 
   for (int i = first; i <= last; i++) {
-    next_volume += volumes->normalized[i];
-    // Determine the faction in the direction of the lock according to the profile.
-    // Since this is the negative part of the profile, we need to add a minus sign.
-    double fraction = -1.0 * integrate_piecewise_linear_profile(profile, previous_volume, next_volume);
-    log_debug("Layer %d, value = %g, volume = %g, profile fraction = %g\n", i, buffer_ptr[i], volumes->normalized[i], fraction);
-    // Only aggregate fractions that flow into to the lock.
-    if (fraction > 0) {
-      aggregate += buffer_ptr[i] * volumes->normalized[i] * fraction;
-      used_volume += volumes->normalized[i];
-      used_fraction += fraction;
-    }
-    previous_volume = next_volume;
+    log_debug("Layer %d, value = %g, volume = %g, profile fraction = %g\n", i, buffer_ptr[i], volumes->normalized[i]);
+    aggregate += buffer_ptr[i] * volumes->normalized[i];
+    used_volume += volumes->normalized[i];
   }
 
   log_debug("Aggregate = %g\n", aggregate);
   log_debug("Used volume = %g\n", used_volume);
-  log_debug("Used fraction = %g\n", used_fraction);
 
   // Adjust aggregate to normalized volume.
   // Note: if used_volume is zero, so is aggregate.
