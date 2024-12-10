@@ -219,10 +219,16 @@ int get_var(const char *key, void **dst_ptr) {
   } else if (match_key(quantity, "salinity_to_sea")) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_sea;
     source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
-  } else if (match_key(quantity, "water_volume_lake")) {
+  } else if (match_key(quantity, "water_volume_from_lake")) {
+    source_ptr = config.locks[lock_index].from_lake_volumes.volumes;
+    source_len = config.locks[lock_index].from_lake_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_from_sea")) {
+    source_ptr = config.locks[lock_index].from_sea_volumes.volumes;
+    source_len = config.locks[lock_index].from_sea_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_to_lake")) {
     source_ptr = config.locks[lock_index].to_lake_volumes.volumes;
     source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
-  } else if (match_key(quantity, "water_volume_sea")) {
+  } else if (match_key(quantity, "water_volume_to_sea")) {
     source_ptr = config.locks[lock_index].to_sea_volumes.volumes;
     source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_sea")) {
@@ -333,15 +339,20 @@ int get_var_shape(char *key, int dims[DIMR_BMI_MAXDIMS]) { // dims -> int[6]
     source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_sea")) {
     source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
-  } else if (match_key(quantity, "water_volume_lake")) {
+  } else if (match_key(quantity, "water_volume_from_lake")) {
     source_len = config.locks[lock_index].from_lake_volumes.num_volumes;
-  } else if (match_key(quantity, "water_volume_sea")) {
+  } else if (match_key(quantity, "water_volume_from_sea")) {
     source_len = config.locks[lock_index].from_sea_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_to_lake")) {
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_to_sea")) {
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else {
     log_debug("Unhandled get_var('%s', @%p)\n", key, dims);
     source_len = 1;
   }
 
+  memset(dims, 0, DIMR_BMI_MAXDIMS * sizeof(int));
   dims[0] = source_len;
   log_info("%s yielded %d for quantity '%s' of lock %d.\n", __func__, source_len,
            quantity, lock_index);
