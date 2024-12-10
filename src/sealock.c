@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <float.h>
+#include <math.h>
 
 int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
@@ -494,7 +495,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   } else {
     log_debug("Collecting salinity_sea from layers:\n");
     lock->parameters.salinity_sea =
-        sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
+sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
   }
 
   return SEALOCK_OK;
@@ -502,8 +503,8 @@ static int sealock_collect_layers(sealock_state_t *lock) {
 
 // Distribute scalar quantity over layers into layer buffer using a provided profile.
 // If no profile is provided (NULL), the quanity is simply duplicated.
-static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double quantity,
-                              double *buffer_ptr) {
+static int sealock_distribute(dfm_volumes_t* volumes, profile_t* profile, double quantity,
+  double* buffer_ptr) {
   layers_t layers;
   layered_discharge_t result;
   unsigned first_active;
@@ -534,10 +535,31 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
   return SEALOCK_OK;
 }
 
-static int sealock_distribute_results(sealock_state_t *lock) {
-  profile_t *lake_profile, *sea_profile;
-  dfm_volumes_t *from_lake_volumes, *from_sea_volumes;
-  dfm_volumes_t *to_lake_volumes, *to_sea_volumes;
+// Set layer entries in buffer to zero if mask buffer is zero.
+static int sealock_mask_layers(dfm_volumes_t* volumes, double* mask_ptr, double* buffer_ptr) {
+  layers_t layers;
+  layered_discharge_t result;
+  unsigned first_active;
+
+  assert(volumes);
+  assert(buffer_ptr);
+
+  first_active = volumes->first_active_cell;
+
+  for (int layer = 0; layer < volumes->num_active_cells; layer++) {
+    if (fabs(mask_ptr[layer]) < DBL_EPSILON) {
+      buffer_ptr[first_active + layer] = 0.0;
+    }
+    log_debug("masked layer quantity         [%d] = %g\n", layer, buffer_ptr[first_active + layer]);
+  }
+
+  return SEALOCK_OK;
+}
+
+static int sealock_distribute_results(sealock_state_t* lock) {
+  profile_t* lake_profile, * sea_profile;
+  dfm_volumes_t* from_lake_volumes, * from_sea_volumes;
+  dfm_volumes_t* to_lake_volumes, * to_sea_volumes;
 
   assert(lock);
 
@@ -554,22 +576,26 @@ static int sealock_distribute_results(sealock_state_t *lock) {
   }
   log_debug("quantity = salt_load_lake\n");
   if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.salt_load_lake,
-                         lock->results3d.salt_load_lake) != 0) {
+    lock->results3d.salt_load_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_from_lake\n");
   if (sealock_distribute(from_lake_volumes, lake_profile, lock->results.discharge_from_lake,
-                             lock->results3d.discharge_from_lake) != 0) {
+    lock->results3d.discharge_from_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_to_lake\n");
   if (sealock_distribute(from_lake_volumes, lake_profile, lock->results.discharge_to_lake,
-                         lock->results3d.discharge_to_lake) != 0) {
+    lock->results3d.discharge_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salinity_to_lake\n");
   if (sealock_distribute(to_lake_volumes, NULL, lock->results.salinity_to_lake,
-                         lock->results3d.salinity_to_lake) != 0) {
+    lock->results3d.salinity_to_lake) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_mask_layers(to_lake_volumes, lock->results3d.discharge_to_lake,
+    lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = mass_transport_sea\n");
@@ -595,6 +621,10 @@ static int sealock_distribute_results(sealock_state_t *lock) {
   log_debug("quantity = salinity_to_sea\n");
   if (sealock_distribute(to_sea_volumes, NULL, lock->results.salinity_to_sea,
                          lock->results3d.salinity_to_sea) != 0) {
+    return SEALOCK_ERROR;
+  }
+  if (sealock_mask_layers(to_sea_volumes, lock->results3d.discharge_to_sea,
+                          lock->results3d.salinity_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
   return SEALOCK_OK;
