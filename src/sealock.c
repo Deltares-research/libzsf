@@ -585,7 +585,7 @@ static int sealock_distribute_results(sealock_state_t* lock) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_to_lake\n");
-  if (sealock_distribute(from_lake_volumes, lake_profile, lock->results.discharge_to_lake,
+  if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.discharge_to_lake,
     lock->results3d.discharge_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
