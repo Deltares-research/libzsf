@@ -15,14 +15,22 @@ int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
   zsf_param_default(&lock->parameters);
   // Set up default volumes/profile for '2D' case.
-  lock->lake_volumes.num_volumes = 1;
-  lock->lake_volumes.volumes[0] = 1.0;
-  lock->lake_volumes.first_active_cell = 0;
-  lock->lake_volumes.num_active_cells = 1;
-  lock->sea_volumes.num_volumes = 1;
-  lock->sea_volumes.volumes[0] = 1.0;
-  lock->sea_volumes.first_active_cell = 0;
-  lock->sea_volumes.num_active_cells = 1;
+  lock->from_lake_volumes.num_volumes = 1;
+  lock->from_lake_volumes.volumes[0] = 1.0;
+  lock->from_lake_volumes.first_active_cell = 0;
+  lock->from_lake_volumes.num_active_cells = 1;
+  lock->from_sea_volumes.num_volumes = 1;
+  lock->from_sea_volumes.volumes[0] = 1.0;
+  lock->from_sea_volumes.first_active_cell = 0;
+  lock->from_sea_volumes.num_active_cells = 1;
+  lock->to_lake_volumes.num_volumes = 1;
+  lock->to_lake_volumes.volumes[0] = 1.0;
+  lock->to_lake_volumes.first_active_cell = 0;
+  lock->to_lake_volumes.num_active_cells = 1;
+  lock->to_sea_volumes.num_volumes = 1;
+  lock->to_sea_volumes.volumes[0] = 1.0;
+  lock->to_sea_volumes.first_active_cell = 0;
+  lock->to_sea_volumes.num_active_cells = 1;
   return io_layer_init_2d(&lock->flow_profile);
 }
 
@@ -31,8 +39,10 @@ int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_
   int status = SEALOCK_OK;
 
   // Set number of DFM volumes.
-  lock->lake_volumes.num_volumes = max_num_z_layers;
-  lock->sea_volumes.num_volumes = max_num_z_layers;
+  lock->from_lake_volumes.num_volumes = max_num_z_layers;
+  lock->from_sea_volumes.num_volumes = max_num_z_layers;
+  lock->to_lake_volumes.num_volumes = max_num_z_layers;
+  lock->to_sea_volumes.num_volumes = max_num_z_layers;
 
   // Load timeseries data when required.
   if (status == SEALOCK_OK && lock->operational_parameters_file) {
@@ -421,8 +431,14 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
 // Underlying assumption is that the volumes have one
 // contiguous run of non-zero cells.
 void sealock_get_active_layers(sealock_state_t *lock) {
-  sealock_get_active_cells(&lock->lake_volumes);
-  sealock_get_active_cells(&lock->sea_volumes);
+  log_debug("from_lake_volumes:\n");
+  sealock_get_active_cells(&lock->from_lake_volumes);
+  log_debug("from_sea _volumes:\n");
+  sealock_get_active_cells(&lock->from_sea_volumes);
+  log_debug("to_lake_volumes:\n");
+  sealock_get_active_cells(&lock->to_lake_volumes);
+  log_debug("to_sea_volumes:\n");
+  sealock_get_active_cells(&lock->to_sea_volumes);
 }
 
 // Collect aggregate of quantity from dfm layer buffer into scalar.
@@ -463,7 +479,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
   assert(lock);
   sealock_get_active_layers(lock);
 
-  lake_volumes = &lock->lake_volumes;
+  lake_volumes = &lock->from_lake_volumes;
   if (lake_volumes->num_volumes == 1) {
     lock->parameters.salinity_lake = lock->parameters3d.salinity_lake[lake_volumes->first_active_cell]; 
   } else {
@@ -472,7 +488,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
         sealock_collect(lake_volumes, lock->parameters3d.salinity_lake);
   }
 
-  sea_volumes = &lock->sea_volumes;
+  sea_volumes = &lock->from_sea_volumes;
   if (sea_volumes->num_volumes == 1) {
     lock->parameters.salinity_sea = lock->parameters3d.salinity_sea[sea_volumes->first_active_cell];
   } else {
@@ -520,61 +536,64 @@ static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double
 
 static int sealock_distribute_results(sealock_state_t *lock) {
   profile_t *lake_profile, *sea_profile;
-  dfm_volumes_t *lake_volumes, *sea_volumes;
+  dfm_volumes_t *from_lake_volumes, *from_sea_volumes;
+  dfm_volumes_t *to_lake_volumes, *to_sea_volumes;
 
   assert(lock);
 
   lake_profile = &lock->flow_profile;
   sea_profile = &lock->flow_profile;
-  lake_volumes = &lock->lake_volumes;
-  sea_volumes = &lock->sea_volumes;
+  from_lake_volumes = &lock->from_lake_volumes;
+  from_sea_volumes = &lock->from_sea_volumes;
+  to_lake_volumes = &lock->to_lake_volumes;
+  to_sea_volumes = &lock->to_sea_volumes;
 
   log_debug("quantity = mass_transport_lake\n");
-  if (sealock_distribute(lake_volumes, lake_profile, lock->results.mass_transport_lake, lock->results3d.mass_transport_lake) != 0) {
+  if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.mass_transport_lake, lock->results3d.mass_transport_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salt_load_lake\n");
-  if (sealock_distribute(lake_volumes, lake_profile, lock->results.salt_load_lake,
+  if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.salt_load_lake,
                          lock->results3d.salt_load_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_from_lake\n");
-  if (sealock_distribute(lake_volumes, lake_profile, lock->results.discharge_from_lake,
+  if (sealock_distribute(from_lake_volumes, lake_profile, lock->results.discharge_from_lake,
                              lock->results3d.discharge_from_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_to_lake\n");
-  if (sealock_distribute(lake_volumes, lake_profile, lock->results.discharge_to_lake,
+  if (sealock_distribute(from_lake_volumes, lake_profile, lock->results.discharge_to_lake,
                          lock->results3d.discharge_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salinity_to_lake\n");
-  if (sealock_distribute(lake_volumes, NULL, lock->results.salinity_to_lake,
+  if (sealock_distribute(to_lake_volumes, NULL, lock->results.salinity_to_lake,
                          lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = mass_transport_sea\n");
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.mass_transport_sea,
+  if (sealock_distribute(to_sea_volumes, sea_profile, lock->results.mass_transport_sea,
                          lock->results3d.mass_transport_sea) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salt_load_sea\n");
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.salt_load_sea,
+  if (sealock_distribute(to_sea_volumes, sea_profile, lock->results.salt_load_sea,
                          lock->results3d.salt_load_sea) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_from_sea\n");
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_from_sea,
+  if (sealock_distribute(from_sea_volumes, sea_profile, lock->results.discharge_from_sea,
                          lock->results3d.discharge_from_sea) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_to_sea\n");
-  if (sealock_distribute(sea_volumes, sea_profile, lock->results.discharge_to_sea,
+  if (sealock_distribute(to_sea_volumes, sea_profile, lock->results.discharge_to_sea,
                          lock->results3d.discharge_to_sea) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salinity_to_sea\n");
-  if (sealock_distribute(sea_volumes, NULL, lock->results.salinity_to_sea,
+  if (sealock_distribute(to_sea_volumes, NULL, lock->results.salinity_to_sea,
                          lock->results3d.salinity_to_sea) != 0) {
     return SEALOCK_ERROR;
   }

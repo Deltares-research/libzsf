@@ -120,20 +120,26 @@ int set_var(const char *key, void *src_ptr) {
   // Set dest_ptr for intended lock and quantity.
   if (match_key(quantity, "salinity_lake")) {
     dest_ptr = config.locks[lock_index].parameters3d.salinity_lake;
-    dest_len = config.locks[lock_index].lake_volumes.num_volumes;
+    dest_len = config.locks[lock_index].from_lake_volumes.num_volumes;
   } else if (match_key(quantity, "head_lake")) {
     dest_ptr = &config.locks[lock_index].parameters.head_lake;
   } else if (match_key(quantity, "salinity_sea")) {
     dest_ptr = config.locks[lock_index].parameters3d.salinity_sea;
-    dest_len = config.locks[lock_index].sea_volumes.num_volumes;
+    dest_len = config.locks[lock_index].from_sea_volumes.num_volumes;
   } else if (match_key(quantity, "head_sea")) {
     dest_ptr = &config.locks[lock_index].parameters.head_sea;
-  } else if (match_key(quantity, "water_volume_lake")) {
-    dest_ptr = config.locks[lock_index].lake_volumes.volumes;
-    dest_len = config.locks[lock_index].lake_volumes.num_volumes;
-  } else if (match_key(quantity, "water_volume_sea")) {
-    dest_ptr = config.locks[lock_index].sea_volumes.volumes;
-    dest_len = config.locks[lock_index].sea_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_from_lake")) {
+    dest_ptr = config.locks[lock_index].from_lake_volumes.volumes;
+    dest_len = config.locks[lock_index].from_lake_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_from_sea")) {
+    dest_ptr = config.locks[lock_index].from_sea_volumes.volumes;
+    dest_len = config.locks[lock_index].from_sea_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_to_lake")) {
+    dest_ptr = config.locks[lock_index].to_lake_volumes.volumes;
+    dest_len = config.locks[lock_index].to_lake_volumes.num_volumes;
+  } else if (match_key(quantity, "water_volume_to_sea")) {
+    dest_ptr = config.locks[lock_index].to_sea_volumes.volumes;
+    dest_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "temperature_lake")) {
     dest_ptr = &config.locks[lock_index].parameters.temperature_lake;
   } else if (match_key(quantity, "temperature_sea")) {
@@ -185,40 +191,40 @@ int get_var(const char *key, void **dst_ptr) {
   // Set source based on key(s)...
   if (match_key(quantity, "mass_transport_lake")) {
     source_ptr = config.locks[lock_index].results3d.mass_transport_lake;
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "salt_load_lake")) {
     source_ptr = config.locks[lock_index].results3d.salt_load_lake;
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_from_lake")) {
     source_ptr = config.locks[lock_index].results3d.discharge_from_lake;
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_to_lake")) {
     source_ptr = config.locks[lock_index].results3d.discharge_to_lake;
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_lake")) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_lake;
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "mass_transport_sea")) {
     source_ptr = config.locks[lock_index].results3d.mass_transport_sea;
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salt_load_sea")) {
     source_ptr = config.locks[lock_index].results3d.salt_load_sea;
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_from_sea")) {
     source_ptr = config.locks[lock_index].results3d.discharge_from_sea;
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_to_sea")) {
     source_ptr = config.locks[lock_index].results3d.discharge_to_sea;
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_sea")) {
     source_ptr = config.locks[lock_index].results3d.salinity_to_sea;
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "water_volume_lake")) {
-    source_ptr = config.locks[lock_index].lake_volumes.volumes;
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_ptr = config.locks[lock_index].to_lake_volumes.volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "water_volume_sea")) {
-    source_ptr = config.locks[lock_index].sea_volumes.volumes;
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_ptr = config.locks[lock_index].to_sea_volumes.volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_sea")) {
     // NOTE: This is really a GET_VALUE_PTR(), called before the update.
     source_ptr = config.locks[lock_index].parameters3d.salinity_sea;
@@ -308,29 +314,29 @@ int get_var_shape(char *key, int dims[DIMR_BMI_MAXDIMS]) { // dims -> int[6]
 
   // Set source based on key(s)...
   if (match_key(quantity, "mass_transport_lake")) {
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "salt_load_lake")) {
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_from_lake")) {
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].from_lake_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_to_lake")) {
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_lake")) {
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_lake_volumes.num_volumes;
   } else if (match_key(quantity, "mass_transport_sea")) {
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salt_load_sea")) {
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_from_sea")) {
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].from_sea_volumes.num_volumes;
   } else if (match_key(quantity, "discharge_to_sea")) {
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "salinity_to_sea")) {
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].to_sea_volumes.num_volumes;
   } else if (match_key(quantity, "water_volume_lake")) {
-    source_len = config.locks[lock_index].lake_volumes.num_volumes;
+    source_len = config.locks[lock_index].from_lake_volumes.num_volumes;
   } else if (match_key(quantity, "water_volume_sea")) {
-    source_len = config.locks[lock_index].sea_volumes.num_volumes;
+    source_len = config.locks[lock_index].from_sea_volumes.num_volumes;
   } else {
     log_debug("Unhandled get_var('%s', @%p)\n", key, dims);
     source_len = 1;
