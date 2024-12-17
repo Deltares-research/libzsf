@@ -30,7 +30,7 @@ void cleanup_layered_discharge(layered_discharge_t *layered_discharge) {
   free(layered_discharge->discharge_per_layer);
 }
 
-// Generate a default array linear relative_z positions for supplied number_of_layers.
+// Generate a default array linear z positions for supplied number_of_layers.
 // Returns pointer to allocated array of doubles.
 // Note: Caller is responsible to deallocating the created array.
 double *io_layer_linear_z_positions(const int number_of_layers) {
@@ -237,7 +237,7 @@ int distribute_discharge_over_layers(double total_quantity, const profile_t *pro
     relative_z_start = profile->relative_z_zero;
   }
 
-  double relative_discharge_layer = 0.0;
+  double relative_quantity_layer = 0.0;
 
   log_debug("quantity total = %g\n", total_quantity);
   log_debug("num_layers = %d\n", layers->number_of_layers);
@@ -245,19 +245,19 @@ int distribute_discharge_over_layers(double total_quantity, const profile_t *pro
     for (int layer = 0; layer < layers->number_of_layers; ++layer) {
       relative_z += layers->normalized_target_volumes[layer];
       if (relative_z < relative_z_start || relative_z_prev > relative_z_end) {
-        relative_discharge_layer = 0.0;
+        relative_quantity_layer = 0.0;
       } else if (relative_z >= relative_z_start && relative_z_prev < relative_z_start) {
-        relative_discharge_layer = integrate_piecewise_linear_profile(profile, relative_z_start, relative_z);
+        relative_quantity_layer = integrate_piecewise_linear_profile(profile, relative_z_start, relative_z);
       } else if (relative_z > relative_z_end && relative_z_prev >= relative_z_start) {
-        relative_discharge_layer = integrate_piecewise_linear_profile(profile, relative_z_prev, relative_z_end);
+        relative_quantity_layer = integrate_piecewise_linear_profile(profile, relative_z_prev, relative_z_end);
       } else {
-        relative_discharge_layer = integrate_piecewise_linear_profile(profile, relative_z_prev, relative_z);
+        relative_quantity_layer = integrate_piecewise_linear_profile(profile, relative_z_prev, relative_z);
       }
-      const double layer_discharge = fabs(relative_discharge_layer) * total_quantity;
-      profile_integral += relative_discharge_layer;
-      layered_quantity_result->discharge_per_layer[layer] = layer_discharge;
-      log_debug("layer quantity         [%d] = %g (== %g * %g)\n", layer, layer_discharge,
-                fabs(relative_discharge_layer), total_quantity);
+      const double layer_quantity = fabs(relative_quantity_layer) * total_quantity;
+      profile_integral += relative_quantity_layer;
+      layered_quantity_result->discharge_per_layer[layer] = layer_quantity;
+      log_debug("layer quantity         [%d] = %g (== %g * %g)\n", layer, layer_quantity,
+                fabs(relative_quantity_layer), total_quantity);
       relative_z_prev = relative_z;
     }
   } else {
