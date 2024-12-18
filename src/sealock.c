@@ -324,9 +324,9 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
 static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
   time_t duration = 0;
-  log_debug("%s: Handling '%d' (run_update = %d)\n", lock->id, lock->phase_args.run_update);
+  log_debug("%s: Handling '%s' (run_update = %d)\n", __func__, lock->id, lock->phase_args.run_update);
   if (lock->phase_args.run_update) {
-    log_info("%s: Updating '%d' to phase %d.\n", lock->id, lock->phase_args.routine);
+    log_info("%s: Updating '%s' to phase %d.\n", __func__, lock->id, lock->phase_args.routine);
     zsf_results_t previous_step_results = lock->results;
     switch (lock->phase_args.routine) {
     case 1:
