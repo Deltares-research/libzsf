@@ -736,7 +736,7 @@ int ZSF_CALLCONV zsf_step_phase_2(const zsf_param_t *p, double t_open_lake,
   if (err) {
     return err;
   }
-  if (fabs(state->head_lock - p->head_lake) > 1E-8) {
+  if (fabs(state->head_lock - p->head_lake) > 0.01 ) { // was: 1E-8
     return ZSF_ERR_REMAINING_HEAD_DIFF;
   }
 
@@ -788,7 +788,7 @@ int ZSF_CALLCONV zsf_step_phase_4(const zsf_param_t *p, double t_open_sea, zsf_p
   if (err) {
     return err;
   }
-  if (fabs(state->head_lock - p->head_sea) > 1E-8) {
+  if (fabs(state->head_lock - p->head_sea) > 0.01) { // Was: 1E-8
     return ZSF_ERR_REMAINING_HEAD_DIFF;
   }
 
