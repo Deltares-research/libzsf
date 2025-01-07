@@ -235,12 +235,16 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     log_info("Applying correction to discharge_to_sea  : %g -> %g\n",
              lock->results.discharge_to_sea, total_volume_to_sea / new_phase_len);
     lock->results.discharge_to_sea = total_volume_to_sea / new_phase_len;
-    log_info("Applying correction to salinity_to_lake  : %g -> %g\n",
-             lock->results.salinity_to_lake, total_salt_to_lake / total_volume_to_lake);
-    lock->results.salinity_to_lake = total_salt_to_lake / total_volume_to_lake;
-    log_info("Applying correction to salinity_to_sea  : %g -> %g\n",
-             lock->results.salinity_to_sea, total_salt_to_sea / total_volume_to_sea);
-    lock->results.salinity_to_sea = total_salt_to_sea / total_volume_to_sea;
+    if (total_volume_to_lake > 0) {
+      log_info("Applying correction to salinity_to_lake  : %g -> %g\n",
+               lock->results.salinity_to_lake, total_salt_to_lake / total_volume_to_lake);
+      lock->results.salinity_to_lake = total_salt_to_lake / total_volume_to_lake;
+    }
+    if (total_volume_to_sea > 0) {
+      log_info("Applying correction to salinity_to_sea  : %g -> %g\n",
+               lock->results.salinity_to_sea, total_salt_to_sea / total_volume_to_sea);
+      lock->results.salinity_to_sea = total_salt_to_sea / total_volume_to_sea;
+    }
     log_info("Applying correction to discharge_from_lake : %g -> %g\n",
              lock->results.discharge_from_lake, total_volume_from_lake / new_phase_len);
     lock->results.discharge_from_lake = total_volume_from_lake / new_phase_len;
