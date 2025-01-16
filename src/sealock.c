@@ -6,11 +6,11 @@
 #include "timestamp.h"
 
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <float.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static void sealock_set_2d_defaults(dfm_volumes_t *volumes) {
   volumes->num_volumes = 1;
@@ -19,9 +19,10 @@ static void sealock_set_2d_defaults(dfm_volumes_t *volumes) {
   volumes->num_active_cells = 1;
 }
 
-int sealock_defaults(sealock_state_t* lock) {
+int sealock_defaults(sealock_state_t *lock) {
   // Init calculation parameters with defaults.
   zsf_param_default(&lock->parameters);
+  lock->parameters.allowed_head_difference = 0.1; // 10 cm.
   // Set up default volumes/profile for '2D' case.
   sealock_set_2d_defaults(&lock->from_lake_volumes);
   sealock_set_2d_defaults(&lock->from_sea_volumes);
@@ -30,8 +31,7 @@ int sealock_defaults(sealock_state_t* lock) {
   return io_layer_init_2d(&lock->flow_profile);
 }
 
-
-int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_z_layers) {
+int sealock_init(sealock_state_t *lock, time_t start_time, unsigned int max_num_z_layers) {
   int status = SEALOCK_OK;
 
   // Set number of DFM volumes.
@@ -45,12 +45,12 @@ int sealock_init(sealock_state_t* lock, time_t start_time, unsigned int max_num_
     status = sealock_load_timeseries(lock, lock->operational_parameters_file);
     if (status == SEALOCK_OK) {
       if (lock->times[0] > start_time) {
-        log_error("Timeseries of lock '%s' starts after start_time! (%lld > %lld)\n", lock->id, lock->times[0], start_time);
+        log_error("Timeseries of lock '%s' starts after start_time! (%lld > %lld)\n", lock->id,
+                  lock->times[0], start_time);
         status = SEALOCK_ERROR;
       }
     }
   }
-
 
   if (status == SEALOCK_OK) {
     // Do one update to properly populate all parameters from timeseries for current time.
@@ -78,8 +78,8 @@ int sealock_load_timeseries(sealock_state_t *lock, char *filepath) {
                                                                              : SEALOCK_OK;
     break;
   case phase_wise_mode:
-    status = load_phase_wise_timeseries(&lock->timeseries_data, filepath) ? SEALOCK_ERROR
-                                                                          : SEALOCK_OK;
+    status =
+        load_phase_wise_timeseries(&lock->timeseries_data, filepath) ? SEALOCK_ERROR : SEALOCK_OK;
     break;
   default:
     status = SEALOCK_ERROR;
@@ -149,7 +149,7 @@ static int sealock_cycle_average_step(sealock_state_t *lock, time_t time) {
 }
 
 /* copy phase_results to general results */
-static int sealock_phase_results_to_results(sealock_state_t* lock) {
+static int sealock_phase_results_to_results(sealock_state_t *lock) {
   // Copy phase_results to equivelent results struct.
   // Also apply the sign convention for DIMR/BMI for discharge.
   lock->results.discharge_from_lake = -lock->phase_results.discharge_from_lake;
@@ -164,8 +164,8 @@ static int sealock_phase_results_to_results(sealock_state_t* lock) {
 }
 
 /* Set a correction for the current phase results for possibly skipping a bit of the start. */
-static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, time_t time, time_t duration,
-                                                      zsf_results_t *previous) {
+static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, time_t time,
+                                                      time_t duration, zsf_results_t *previous) {
   time_t phase_start = lock->times[lock->current_row];
   time_t phase_end = phase_start + duration;
   time_t skipped_time = time - phase_start;
@@ -181,7 +181,8 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     return SEALOCK_OK;
   }
 
-  log_debug("%s: time = %d, phase_end = %d, skipped_time = %d\n", __func__, time, phase_end, skipped_time);
+  log_debug("%s: time = %d, phase_end = %d, skipped_time = %d\n", __func__, time, phase_end,
+            skipped_time);
   if (time <= phase_end) {
     log_info("Correcting for change of phase.\n");
     // Calculate (corrected) volume, salt mass and resulting salinity for lake and sea.
@@ -323,7 +324,8 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
 static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
   int status = SEALOCK_OK;
   time_t duration = 0;
-  log_debug("%s: Handling '%s' (run_update = %d)\n", __func__, lock->id, lock->phase_args.run_update);
+  log_debug("%s: Handling '%s' (run_update = %d)\n", __func__, lock->id,
+            lock->phase_args.run_update);
   if (lock->phase_args.run_update) {
     log_info("%s: Updating '%s' to phase %d.\n", __func__, lock->id, lock->phase_args.routine);
     zsf_results_t previous_step_results = lock->results;
@@ -358,6 +360,15 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
       }
       break;
     }
+
+    if (status == 3 && (lock->phase_args.routine == 2 || lock->phase_args.routine == 4)) {
+      // There was a larger than allowed difference between the head and the lock when opening the doors.
+      // Calculations should continue, but we do need to log a warning.
+      log_warning("zsf_step_phase_%d(..) returned %d: %s!\n", lock->phase_args.routine, status,
+                  zsf_error_msg(status));
+      status = SEALOCK_OK;
+    }
+
     if (status == SEALOCK_OK) {
       log_debug("Status is OK. Converting results.\n");
       status = sealock_phase_results_to_results(lock);
@@ -366,7 +377,8 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
         log_error("zsf_step_phase_%d(..) returned %d: %s!\n", lock->phase_args.routine, status,
                   zsf_error_msg(status));
       } else if (lock->phase_args.routine < 0) {
-        log_error("zsf_step_flush_doors_closed(..) returned %d: %s!\n", status, zsf_error_msg(status));
+        log_error("zsf_step_flush_doors_closed(..) returned %d: %s!\n", status,
+                  zsf_error_msg(status));
       }
     }
     if (status == SEALOCK_OK) {
@@ -397,11 +409,11 @@ int sealock_set_parameters_for_time(sealock_state_t *lock, time_t time) {
   return status;
 }
 
-static void sealock_get_active_cells(dfm_volumes_t* volumes) {
+static void sealock_get_active_cells(dfm_volumes_t *volumes) {
   // Determine amount of active volumes.
   unsigned amount = 0;
   unsigned first = 0;
-  unsigned last = volumes->num_volumes-1;
+  unsigned last = volumes->num_volumes - 1;
   double total_volume = 0.0;
   unsigned index = 0;
   while (first < volumes->num_volumes && volumes->volumes[first] <= DBL_EPSILON) {
@@ -416,7 +428,7 @@ static void sealock_get_active_cells(dfm_volumes_t* volumes) {
   volumes->num_active_cells = amount;
   volumes->first_active_cell = first;
   // calculate normalized volumes
-  for (index = first; index < first+amount; index++) {
+  for (index = first; index < first + amount; index++) {
     total_volume += volumes->volumes[index];
   }
   log_debug("total_volume   = %g\n", total_volume);
@@ -442,7 +454,7 @@ void sealock_get_active_layers(sealock_state_t *lock) {
 }
 
 // Collect aggregate of quantity from dfm layer buffer into scalar.
-static double sealock_collect(dfm_volumes_t *volumes, double* buffer_ptr) {
+static double sealock_collect(dfm_volumes_t *volumes, double *buffer_ptr) {
   double aggregate = 0.0;
 
   assert(volumes);
@@ -481,7 +493,8 @@ static int sealock_collect_layers(sealock_state_t *lock) {
 
   lake_volumes = &lock->from_lake_volumes;
   if (lake_volumes->num_volumes == 1) {
-    lock->parameters.salinity_lake = lock->parameters3d.salinity_lake[lake_volumes->first_active_cell]; 
+    lock->parameters.salinity_lake =
+        lock->parameters3d.salinity_lake[lake_volumes->first_active_cell];
   } else {
     log_debug("Collecting salinity_lake from layers:\n");
     lock->parameters.salinity_lake =
@@ -493,8 +506,7 @@ static int sealock_collect_layers(sealock_state_t *lock) {
     lock->parameters.salinity_sea = lock->parameters3d.salinity_sea[sea_volumes->first_active_cell];
   } else {
     log_debug("Collecting salinity_sea from layers:\n");
-    lock->parameters.salinity_sea =
-sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
+    lock->parameters.salinity_sea = sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
   }
 
   return SEALOCK_OK;
@@ -502,8 +514,8 @@ sealock_collect(sea_volumes, lock->parameters3d.salinity_sea);
 
 // Distribute scalar quantity over layers into layer buffer using a provided profile.
 // If no profile is provided (NULL), the quanity is simply duplicated.
-static int sealock_distribute(dfm_volumes_t* volumes, profile_t* profile, double quantity,
-  double* buffer_ptr) {
+static int sealock_distribute(dfm_volumes_t *volumes, profile_t *profile, double quantity,
+                              double *buffer_ptr) {
   layers_t layers;
   layered_discharge_t result;
   unsigned first_active;
@@ -535,7 +547,7 @@ static int sealock_distribute(dfm_volumes_t* volumes, profile_t* profile, double
 }
 
 // Set layer entries in buffer to zero if mask buffer is zero.
-static int sealock_mask_layers(dfm_volumes_t* volumes, double* mask_ptr, double* buffer_ptr) {
+static int sealock_mask_layers(dfm_volumes_t *volumes, double *mask_ptr, double *buffer_ptr) {
   layers_t layers;
   layered_discharge_t result;
   unsigned first_active;
@@ -555,10 +567,10 @@ static int sealock_mask_layers(dfm_volumes_t* volumes, double* mask_ptr, double*
   return SEALOCK_OK;
 }
 
-static int sealock_distribute_results(sealock_state_t* lock) {
-  profile_t* lake_profile, * sea_profile;
-  dfm_volumes_t* from_lake_volumes, * from_sea_volumes;
-  dfm_volumes_t* to_lake_volumes, * to_sea_volumes;
+static int sealock_distribute_results(sealock_state_t *lock) {
+  profile_t *lake_profile, *sea_profile;
+  dfm_volumes_t *from_lake_volumes, *from_sea_volumes;
+  dfm_volumes_t *to_lake_volumes, *to_sea_volumes;
 
   assert(lock);
 
@@ -570,31 +582,32 @@ static int sealock_distribute_results(sealock_state_t* lock) {
   to_sea_volumes = &lock->to_sea_volumes;
 
   log_debug("quantity = mass_transport_lake\n");
-  if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.mass_transport_lake, lock->results3d.mass_transport_lake) != 0) {
+  if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.mass_transport_lake,
+                         lock->results3d.mass_transport_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salt_load_lake\n");
   if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.salt_load_lake,
-    lock->results3d.salt_load_lake) != 0) {
+                         lock->results3d.salt_load_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_from_lake\n");
   if (sealock_distribute(from_lake_volumes, lake_profile, lock->results.discharge_from_lake,
-    lock->results3d.discharge_from_lake) != 0) {
+                         lock->results3d.discharge_from_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = discharge_to_lake\n");
   if (sealock_distribute(to_lake_volumes, lake_profile, lock->results.discharge_to_lake,
-    lock->results3d.discharge_to_lake) != 0) {
+                         lock->results3d.discharge_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = salinity_to_lake\n");
   if (sealock_distribute(to_lake_volumes, NULL, lock->results.salinity_to_lake,
-    lock->results3d.salinity_to_lake) != 0) {
+                         lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   if (sealock_mask_layers(to_lake_volumes, lock->results3d.discharge_to_lake,
-    lock->results3d.salinity_to_lake) != 0) {
+                          lock->results3d.salinity_to_lake) != 0) {
     return SEALOCK_ERROR;
   }
   log_debug("quantity = mass_transport_sea\n");
@@ -643,7 +656,7 @@ int sealock_update(sealock_state_t *lock, time_t time) {
       status = sealock_phase_wise_step(lock, time);
       break;
     default:
-      assert(0);  // Should never happen.
+      assert(0); // Should never happen.
       status = SEALOCK_ERROR;
       break;
     }
@@ -655,8 +668,8 @@ int sealock_update(sealock_state_t *lock, time_t time) {
 }
 
 // Check if none of the time steps in the timeseries is shorter than delta_time
-int sealock_delta_time_ok(sealock_state_t* lock, time_t delta_time) {
-  for (int i = 0; i < lock->times_len-1; i++) {
+int sealock_delta_time_ok(sealock_state_t *lock, time_t delta_time) {
+  for (int i = 0; i < lock->times_len - 1; i++) {
     if (lock->times[i + 1] - lock->times[i] <= delta_time) {
       return 0;
     }

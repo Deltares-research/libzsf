@@ -80,6 +80,9 @@ static int zsf_ini_handler(char *section, char *key, char *value, void *data_ptr
         free(value_array);
         status = INI_FAIL;
       }
+    } else if (!strcmp(key, "allowed_head_difference")) {
+      config_ptr->locks[lock_index].parameters.allowed_head_difference =
+          ini_parse_double(value, &status);
     }
   } else if (!strcmp(section, "general") || !*section) {
     char *end_ptr = NULL;
