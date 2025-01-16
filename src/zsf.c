@@ -171,6 +171,9 @@ void ZSF_CALLCONV zsf_param_default(zsf_param_t *p) {
   // Convergence criterion
   p->rtol = 1E-5;
   p->atol = 1E-8;
+
+  // Head difference allowance
+  p->allowed_head_difference = 1E-8;
 }
 
 static forceinline void step_phase_1(const zsf_param_t *p, const derived_parameters_t *o,
@@ -736,7 +739,7 @@ int ZSF_CALLCONV zsf_step_phase_2(const zsf_param_t *p, double t_open_lake,
   if (err) {
     return err;
   }
-  if (fabs(state->head_lock - p->head_lake) > 0.01 ) { // was: 1E-8
+  if (fabs(state->head_lock - p->head_lake) > p->allowed_head_difference) {
     return ZSF_ERR_REMAINING_HEAD_DIFF;
   }
 
@@ -788,7 +791,7 @@ int ZSF_CALLCONV zsf_step_phase_4(const zsf_param_t *p, double t_open_sea, zsf_p
   if (err) {
     return err;
   }
-  if (fabs(state->head_lock - p->head_sea) > 0.01) { // Was: 1E-8
+  if (fabs(state->head_lock - p->head_sea) > p->allowed_head_difference) {
     return ZSF_ERR_REMAINING_HEAD_DIFF;
   }
 
