@@ -361,7 +361,7 @@ static int sealock_phase_wise_step(sealock_state_t *lock, time_t time) {
       break;
     }
 
-    if (status == 3 && (lock->phase_args.routine == 2 || lock->phase_args.routine == 4)) {
+    if (status == 2 && (lock->phase_args.routine == 2 || lock->phase_args.routine == 4)) {
       // There was a larger than allowed difference between the head and the lock when opening the doors.
       // Calculations should continue, but we do need to log a warning.
       log_warning("zsf_step_phase_%d(..) returned %d: %s!\n", lock->phase_args.routine, status,
