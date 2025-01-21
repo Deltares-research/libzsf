@@ -120,8 +120,8 @@ static int check_parameters_state(const zsf_param_t *p, const derived_parameters
       fmin(o->volume_lock_at_lake, o->volume_lock_at_sea)) {
     return ZSF_SHIP_TOO_BIG;
   }
-  if ((state->salinity_lock > fmax(p->salinity_lake, p->salinity_sea)) ||
-      (state->salinity_lock < fmin(p->salinity_lake, p->salinity_sea))) {
+  if ((state->salinity_lock > fmax(p->salinity_lake, p->salinity_sea) + 1E-8) ||
+      (state->salinity_lock < fmin(p->salinity_lake, p->salinity_sea) - 1E-8)) {
     return ZSF_ERR_SAL_LOCK_OUT_OF_BOUNDS;
   }
 
