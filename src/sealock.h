@@ -92,7 +92,7 @@ typedef struct sealock_state_struct {
   // Volumes
   // Note that the 'to' and 'from' locations may differ
   // so their actual water volumes may be different and
-  // should be trated as such.
+  // should be treated as such.
   dfm_volumes_t from_lake_volumes;
   dfm_volumes_t from_sea_volumes;
   dfm_volumes_t to_lake_volumes;
