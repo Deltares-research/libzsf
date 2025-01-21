@@ -12,26 +12,21 @@
 #include <float.h>
 #include <math.h>
 
+static void sealock_set_2d_defaults(dfm_volumes_t *volumes) {
+  volumes->num_volumes = 1;
+  volumes->volumes[0] = 1.0;
+  volumes->first_active_cell = 0;
+  volumes->num_active_cells = 1;
+}
+
 int sealock_defaults(sealock_state_t* lock) {
   // Init calculation parameters with defaults.
   zsf_param_default(&lock->parameters);
   // Set up default volumes/profile for '2D' case.
-  lock->from_lake_volumes.num_volumes = 1;
-  lock->from_lake_volumes.volumes[0] = 1.0;
-  lock->from_lake_volumes.first_active_cell = 0;
-  lock->from_lake_volumes.num_active_cells = 1;
-  lock->from_sea_volumes.num_volumes = 1;
-  lock->from_sea_volumes.volumes[0] = 1.0;
-  lock->from_sea_volumes.first_active_cell = 0;
-  lock->from_sea_volumes.num_active_cells = 1;
-  lock->to_lake_volumes.num_volumes = 1;
-  lock->to_lake_volumes.volumes[0] = 1.0;
-  lock->to_lake_volumes.first_active_cell = 0;
-  lock->to_lake_volumes.num_active_cells = 1;
-  lock->to_sea_volumes.num_volumes = 1;
-  lock->to_sea_volumes.volumes[0] = 1.0;
-  lock->to_sea_volumes.first_active_cell = 0;
-  lock->to_sea_volumes.num_active_cells = 1;
+  sealock_set_2d_defaults(&lock->from_lake_volumes);
+  sealock_set_2d_defaults(&lock->from_sea_volumes);
+  sealock_set_2d_defaults(&lock->to_lake_volumes);
+  sealock_set_2d_defaults(&lock->to_sea_volumes);
   return io_layer_init_2d(&lock->flow_profile);
 }
 

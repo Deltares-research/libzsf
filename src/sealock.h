@@ -89,11 +89,17 @@ typedef struct sealock_state_struct {
   time_t *times;
   size_t times_len;
   profile_t flow_profile;
+  // Volumes
+  // Note that the 'to' and 'from' locations may differ
+  // so their actual water volumes may be different and
+  // should be trated as such.
   dfm_volumes_t from_lake_volumes;
   dfm_volumes_t from_sea_volumes;
   dfm_volumes_t to_lake_volumes;
   dfm_volumes_t to_sea_volumes;
+  // 3D parameters
   dfm_parameters3d_t parameters3d;
+  // Results split into layers
   dfm_results3d_t results3d;
 } sealock_state_t;
 

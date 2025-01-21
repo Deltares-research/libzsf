@@ -207,7 +207,7 @@ double integrate_piecewise_linear_profile(const profile_t *profile, const double
 }
 
 // Distribute the total_quantity over layers.
-// The discharge that each layer receives is given by a relative profile
+// The quantity that each layer receives is given by a relative profile
 int distribute_discharge_over_layers(double total_quantity, const profile_t *profile,
                                      const layers_t *layers,
                                      layered_discharge_t *layered_quantity_result) {
