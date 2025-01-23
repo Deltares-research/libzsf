@@ -213,17 +213,6 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
     double total_salt_to_sea = new_salt_to_sea + missing_salt_to_sea;
     log_debug("missing_salt_to_sea = %g\n", missing_salt_to_sea);
 
-    // Only do discharges 'from' lake and sea
-    double new_volume_from_lake = lock->results.discharge_from_lake * new_phase_len;
-    double missing_volume_from_lake =
-        (lock->results.discharge_from_lake - previous->discharge_from_lake) * skipped_time;
-    double total_volume_from_lake = new_volume_from_lake + missing_volume_from_lake;
-
-    double new_volume_from_sea = lock->results.discharge_from_sea * new_phase_len;
-    double missing_volume_from_sea =
-        (lock->results.discharge_from_sea - previous->discharge_from_sea) * skipped_time;
-    double total_volume_from_sea = new_volume_from_sea + missing_volume_from_sea;
-
     // Store corrected results
     log_info("Applying correction to discharge_to_lake : %g -> %g\n",
              lock->results.discharge_to_lake, total_volume_to_lake / new_phase_len);
@@ -241,12 +230,6 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
                lock->results.salinity_to_sea, total_salt_to_sea / total_volume_to_sea);
       lock->results.salinity_to_sea = total_salt_to_sea / total_volume_to_sea;
     }
-    log_info("Applying correction to discharge_from_lake : %g -> %g\n",
-             lock->results.discharge_from_lake, total_volume_from_lake / new_phase_len);
-    lock->results.discharge_from_lake = total_volume_from_lake / new_phase_len;
-    log_info("Applying correction to discharge_from_sea  : %g -> %g\n",
-             lock->results.discharge_from_sea, total_volume_from_sea / new_phase_len);
-    lock->results.discharge_from_sea = total_volume_from_sea / new_phase_len;
   } else {
     log_info("Correcting for timeseries ending.\n");
     // We should only get here if we ran out of rows in the timeline.
@@ -262,16 +245,12 @@ static int sealock_apply_phase_wise_result_correction(sealock_state_t *lock, tim
                new_phase_len / dimr_interval);
       lock->results.discharge_to_lake *= new_phase_len / dimr_interval;
       lock->results.discharge_to_sea *= new_phase_len / dimr_interval;
-      lock->results.discharge_from_lake *= new_phase_len / dimr_interval;
-      lock->results.discharge_from_sea *= new_phase_len / dimr_interval;
     } else {
       log_info("Forcing output to zero.\n");
       lock->results.discharge_to_lake = 0;
       lock->results.discharge_to_sea = 0;
       lock->results.salinity_to_lake = 0;
       lock->results.salinity_to_sea = 0;
-      lock->results.discharge_from_lake = 0;
-      lock->results.discharge_from_sea = 0;
     }
   }
 
