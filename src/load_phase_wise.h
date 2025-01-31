@@ -31,8 +31,8 @@ typedef struct phase_wise_row_struct {
                        .t_level = 0,                                                               \
                        .t_open_lake = 0,                                                           \
                        .t_open_sea = 0,                                                            \
-                       .density_current_factor_sea = 0,                                            \
-                       .density_current_factor_lake = 0};
+                       .density_current_factor_sea = 1.0,                                          \
+                       .density_current_factor_lake = 1.0};
 
 int load_phase_wise_timeseries(csv_context_t *context, char *filepath);
 
