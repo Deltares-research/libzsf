@@ -236,6 +236,12 @@ static int sealock_update_phase_wise_parameters(sealock_state_t *lock, time_t ti
       lock->parameters.density_current_factor_lake = row_data.density_current_factor_lake;
       lock->parameters.ship_volume_sea_to_lake = 0;
       lock->parameters.ship_volume_lake_to_sea = 0;
+      lock->parameters.distance_door_bubble_screen_lake = row_data.distance_door_bubble_screen_lake;
+      lock->parameters.distance_door_bubble_screen_sea = row_data.distance_door_bubble_screen_sea;
+      lock->parameters.flushing_discharge_high_tide = row_data.flushing_discharge_high_tide;
+      lock->parameters.flushing_discharge_low_tide = row_data.flushing_discharge_low_tide;
+      lock->parameters.sill_height_lake = row_data.sill_height_lake;
+      lock->parameters.sill_height_sea = row_data.sill_height_sea;
       switch (row_data.routine) {
       case 1:
       case 3:

@@ -18,6 +18,7 @@ CSV_DOUBLE_SETTER(phase_wise_row_t, distance_door_bubble_screen_sea);
 CSV_DOUBLE_SETTER(phase_wise_row_t, flushing_discharge_high_tide);
 CSV_DOUBLE_SETTER(phase_wise_row_t, flushing_discharge_low_tide);
 CSV_DOUBLE_SETTER(phase_wise_row_t, sill_height_lake);
+CSV_DOUBLE_SETTER(phase_wise_row_t, sill_height_sea);
 
 
 // Load time averaged data from csv.
@@ -49,6 +50,7 @@ int load_phase_wise_timeseries(csv_context_t *context, char *filepath) {
   status = status || def_csv_column(context, "flushing_discharge_low_tide", double_type,
                                     set_flushing_discharge_low_tide);
   status = status || def_csv_column(context, "sill_height_lake", double_type, set_sill_height_lake);
+  status = status || def_csv_column(context, "sill_height_sea", double_type, set_sill_height_sea);
 
   return status || load_csv(context, filepath) ? CSV_ERROR : CSV_OK;
 }

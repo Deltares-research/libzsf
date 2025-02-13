@@ -26,6 +26,7 @@ typedef struct phase_wise_row_struct {
   double flushing_discharge_high_tide;
   double flushing_discharge_low_tide;
   double sill_height_lake;
+  double sill_height_sea;
 } phase_wise_row_t;
 
 #  define PHASE_WISE_CLEAR_ROW()                                                                   \
@@ -42,7 +43,8 @@ typedef struct phase_wise_row_struct {
                        .distance_door_bubble_screen_sea = 0,                                       \
                        .flushing_discharge_high_tide = 0,                                          \
                        .flushing_discharge_low_tide = 0,                                           \
-                       .sill_height_lake = 0};
+                       .sill_height_lake = 0,                                                      \
+                       .sill_height_sea = 0};
 
 int load_phase_wise_timeseries(csv_context_t *context, char *filepath);
 
