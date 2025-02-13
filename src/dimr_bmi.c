@@ -278,7 +278,7 @@ int update(double dt) {
 
   if (config.current_time == config.start_time && delta_time > 0) {
     // Check if timestep is compatible with all loaded timeseries.
-    if (!sealock_delta_time_ok(&config.locks[lock_index], delta_time)) {
+    if (!sealock_delta_time_ok(&config.locks[lock_index], delta_time, config.start_time)) {
       log_error("delta_time (%d) >= shortest phase in the timeseries!\n", delta_time);
       return DIMR_BMI_FAILURE;
     }
