@@ -69,6 +69,7 @@ typedef struct zsf_param_t {
   double sill_height_lake;
   double rtol;
   double atol;
+  double allowed_head_difference;
 } zsf_param_t;
 
 typedef struct zsf_results_t {

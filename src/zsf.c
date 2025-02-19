@@ -120,8 +120,8 @@ static int check_parameters_state(const zsf_param_t *p, const derived_parameters
       fmin(o->volume_lock_at_lake, o->volume_lock_at_sea)) {
     return ZSF_SHIP_TOO_BIG;
   }
-  if ((state->salinity_lock > fmax(p->salinity_lake, p->salinity_sea)) ||
-      (state->salinity_lock < fmin(p->salinity_lake, p->salinity_sea))) {
+  if ((state->salinity_lock > fmax(p->salinity_lake, p->salinity_sea) + 1E-8) ||
+      (state->salinity_lock < fmin(p->salinity_lake, p->salinity_sea) - 1E-8)) {
     return ZSF_ERR_SAL_LOCK_OUT_OF_BOUNDS;
   }
 
@@ -171,6 +171,9 @@ void ZSF_CALLCONV zsf_param_default(zsf_param_t *p) {
   // Convergence criterion
   p->rtol = 1E-5;
   p->atol = 1E-8;
+
+  // Head difference allowance
+  p->allowed_head_difference = 1E-8;
 }
 
 static forceinline void step_phase_1(const zsf_param_t *p, const derived_parameters_t *o,
@@ -736,7 +739,7 @@ int ZSF_CALLCONV zsf_step_phase_2(const zsf_param_t *p, double t_open_lake,
   if (err) {
     return err;
   }
-  if (fabs(state->head_lock - p->head_lake) > 1E-8) {
+  if (fabs(state->head_lock - p->head_lake) > p->allowed_head_difference) {
     return ZSF_ERR_REMAINING_HEAD_DIFF;
   }
 
@@ -788,7 +791,7 @@ int ZSF_CALLCONV zsf_step_phase_4(const zsf_param_t *p, double t_open_sea, zsf_p
   if (err) {
     return err;
   }
-  if (fabs(state->head_lock - p->head_sea) > 1E-8) {
+  if (fabs(state->head_lock - p->head_sea) > p->allowed_head_difference) {
     return ZSF_ERR_REMAINING_HEAD_DIFF;
   }
 
@@ -796,6 +799,7 @@ int ZSF_CALLCONV zsf_step_phase_4(const zsf_param_t *p, double t_open_sea, zsf_p
 
   return ZSF_SUCCESS;
 }
+
 int ZSF_CALLCONV zsf_calc_steady(const zsf_param_t *p, zsf_results_t *results,
                                  zsf_aux_results_t *aux_results) {
 
